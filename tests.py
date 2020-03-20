@@ -209,8 +209,15 @@ def main():
     credentials = open('credentials.json')
     credentials = json.load(credentials)
 
-    test_twitch_api(credentials['twitch'])
-    test_igdb_api(credentials['igdb'])
+    # declare what tests to run - reference if statements below for test codes to add
+    # -> if this list is empty, run all tests
+    testing = []
+
+    # tests!
+    if ((len(testing) == 0) or ("TwitchAPI" in testing)):
+        test_twitch_api(credentials['twitch'])
+    if ((len(testing) == 0) or ("IGDB API" in testing)):
+        test_igdb_api(credentials['igdb'])
 
 
 # Run --------------------------------------------------------------------------

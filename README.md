@@ -28,7 +28,7 @@ Testing script that checks functionality in scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add IGDBAPI to scraper.py with function .search_for_game_by_name()
+ - Modify tests.py so user can turn on/off tests easier
 
 #### What's next?
  - Add "streamer", "stream", and "game" classes
