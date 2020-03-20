@@ -12,13 +12,25 @@ This scraping tool is built in Python 3.7.6 and uses the requests library for in
 Instructions
  - Clone this repo
 
+
+## Files
+
+#### twitch_scraper
+Used for scraping data from the Twitch API
+
 ## Development Notes
 
 ### What is new in this commit?
- - created README.md
+ - created scraper.py
+  - Add TwitchAPI class for handling API requests to Twitch (get_streams, get_user, get_followers, get_games, get_videos)
+  - Add main function that will act as the main runner function for scraping content (both Twitch and IGDB)
+
+ - created tests.py
+  - Add tests for each of the TwitchAPI calls
 
 ### What's next?
- - create twitch_scraper.py - for using the Twitch API
+ - Add IGDBAPI for scraping the IGDB API
+ - Add "streamer", "stream", and "game" classes
 
 ### Future Roadmap
- - create igdb_scraper.py - for using the IGDB API
+ - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)
