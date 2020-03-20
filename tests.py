@@ -113,7 +113,6 @@ def test_twitch_api(clientID):
     videos, cursor = twitchAPI.get_videos(streamer_ids[0], False, 10)
     if (len(videos) < 1 or len(videos) > 10):
         tests['videos1'] = False
-    print("videos: ", len(videos))
 
     # videos test 2: -> use cursor from videos test 1 to grab more streamer videos
     videos, cursor = twitchAPI.get_videos(streamer_ids[0], cursor)
@@ -130,8 +129,50 @@ def test_twitch_api(clientID):
 
 
 # ==============================================================================
-# Main Function
+# Test IGDB API
 # ==============================================================================
+
+
+# main function for testing the TwitchAPI class
+def test_igdb_api(clientID):
+
+    igdbAPI = IGDBAPI(clientID)
+    test_names = [
+        'games0', 'games1', 'games2', 'games3'
+    ]
+    tests = get_empty_test(test_names)
+
+    # values to test with
+    game_names = ["halo"]
+    invalid_game_names = ["ldskfjlkdsjflksdjf"]
+
+    # games test 0: -> search for an individual game
+    games = igdbAPI.search_for_game_by_name(game_names[0])
+    if (not isinstance(games, dict)):
+        tests['games0'] = False
+
+    # games test 1: -> search for an invalid game
+    games = igdbAPI.search_for_game_by_name(invalid_game_names[0])
+    if (games != False):
+        tests['games1'] = False
+
+    # games test 2: -> search for all games that fit search parameter
+    games = igdbAPI.search_for_game_by_name(game_names[0], True)
+    if ((not isinstance(games, list)) or (len(games) < 1)):
+        tests['games2'] = False
+
+    # games test 3: -> search for list of games, but given an invalid game name
+    games = igdbAPI.search_for_game_by_name(invalid_game_names[0], True)
+    if ((not isinstance(games, list)) or (len(games) > 0)):
+        tests['games3'] = False
+
+    print_test_results("IGDB API", tests)
+
+# ==============================================================================
+# Main Functions
+# ==============================================================================
+
+# Helper Functions -------------------------------------------------------------
 
 # prints out the results of a suite of tests
 def print_test_results(title, tests):
@@ -159,6 +200,8 @@ def get_empty_test(test_names):
         test[name] = True
     return test
 
+# Main -------------------------------------------------------------------------
+
 # Runs all tests
 def main():
 
@@ -167,6 +210,8 @@ def main():
     credentials = json.load(credentials)
 
     test_twitch_api(credentials['twitch'])
+    test_igdb_api(credentials['igdb'])
+
 
 # Run --------------------------------------------------------------------------
 

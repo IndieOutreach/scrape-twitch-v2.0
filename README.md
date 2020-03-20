@@ -3,34 +3,39 @@
 ## About
 This project scrapes content from the [Twitch](https://dev.twitch.tv/docs/api/reference#get-streams) and [IGDB](https://api-docs.igdb.com/?shell#age-rating) APIs and compiles them into a CSV file for future use.
 
-In its current state, it is just a README!
 
 
 ## Installation
 This scraping tool is built in Python 3.7.6 and uses the requests library for interfacing with the Twitch and IGDB APIs.
 
-Instructions
+#### Instructions
  - Clone this repo
+ - Create './credentials.json' with content: `{"twitch": "YOUR_TWITCH_CLIENT_ID", "igdb": "YOUR_IGDB_USER_KEY"}` so scraper.py can access the necessary APIs using your account info.
+
+#### How to Run
+ - run `python scraper.py` to run the scraper
+ - run `python tests.py` to run the test suite and make sure all components of the scraper work
 
 
 ## Files
 
-#### twitch_scraper
+#### scraper.py
 Used for scraping data from the Twitch API
+
+### tests.py
+Testing script that checks functionality in scraper.py
 
 ## Development Notes
 
-### What is new in this commit?
- - created scraper.py
-  - Add TwitchAPI class for handling API requests to Twitch (get_streams, get_user, get_followers, get_games, get_videos)
-  - Add main function that will act as the main runner function for scraping content (both Twitch and IGDB)
+#### What is new in this commit?
+ - Add IGDBAPI to scraper.py with function .search_for_game_by_name()
 
- - created tests.py
-  - Add tests for each of the TwitchAPI calls
-
-### What's next?
- - Add IGDBAPI for scraping the IGDB API
+#### What's next?
  - Add "streamer", "stream", and "game" classes
 
-### Future Roadmap
+#### Future Roadmap
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)
+ - Compile the [keyword, genre, theme, platform] alias tables for IGDB
+ - Scraping Algorithm
+ - export to CSV
+ - load from CSV

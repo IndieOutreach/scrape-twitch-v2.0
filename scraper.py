@@ -119,7 +119,25 @@ class IGDBAPI():
 
     def __init__(self, client_id):
         self.headers = {'user-key': client_id, 'Accept': 'application/json'}
+        self.sleep_period = 0.01
 
+    # searches the IGDB API for a game
+    # if result_as_array=True, then return the entire list of results from the IGDB search
+    # otherwise, return just the first object
+    def search_for_game_by_name(self, game_name, result_as_array = False):
+        games = []
+
+        body = "search \"" + game_name + "\"; fields *;"
+        r = requests.get('https://api-v3.igdb.com/games', data=body, headers=self.headers)
+        if (r.status_code == 200):
+            games = r.json()
+
+        if (result_as_array == True):
+            return games
+        elif (len(games) > 0):
+            return games[0]
+        else:
+            return False
 
 # ==============================================================================
 # Main Scraper
