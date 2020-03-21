@@ -102,9 +102,11 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
- - Update README.md to specify raw data that scraper is scraping
+ - Add IGDBAPI.search_for_games() to search for games by ID number (with a specified offset)
 
 #### What's next?
+ - Function for scraping all livestreams on Twitch  
+ - Function for scraping all games (isolated from the Twitch scraper) and creating games.csv
  - Add "streamer", "stream", and "game" classes
 
 #### Future Roadmap
@@ -113,3 +115,4 @@ Lookup tables that map { igdbID: name }
  - Scraping Algorithm
  - export to CSV
  - load from CSV
+ - Update Twitch API to use new OAuth Client-ID before April

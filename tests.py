@@ -8,6 +8,7 @@
 import sys
 import json
 
+import scraper
 from scraper import *
 
 # ==============================================================================
@@ -138,7 +139,8 @@ def test_igdb_api(clientID):
 
     igdbAPI = IGDBAPI(clientID)
     test_names = [
-        'games0', 'games1', 'games2', 'games3'
+        'games_by_name0', 'games_by_name1', 'games_by_name2', 'games_by_name3',
+        'games_by_offset0', 'games_by_offset'
     ]
     tests = get_empty_test(test_names)
 
@@ -146,27 +148,48 @@ def test_igdb_api(clientID):
     game_names = ["halo"]
     invalid_game_names = ["ldskfjlkdsjflksdjf"]
 
-    # games test 0: -> search for an individual game
+    # games_by_name test 0: -> search for an individual game
     games = igdbAPI.search_for_game_by_name(game_names[0])
     if (not isinstance(games, dict)):
-        tests['games0'] = False
+        tests['games_by_name0'] = False
 
-    # games test 1: -> search for an invalid game
+    # games_by_name test 1: -> search for an invalid game
     games = igdbAPI.search_for_game_by_name(invalid_game_names[0])
     if (games != False):
-        tests['games1'] = False
+        tests['games_by_name1'] = False
 
-    # games test 2: -> search for all games that fit search parameter
+    # games_by_name test 2: -> search for all games that fit search parameter
     games = igdbAPI.search_for_game_by_name(game_names[0], True)
     if ((not isinstance(games, list)) or (len(games) < 1)):
-        tests['games2'] = False
+        tests['games_by_name2'] = False
 
-    # games test 3: -> search for list of games, but given an invalid game name
+    # games_by_name test 3: -> search for list of games, but given an invalid game name
     games = igdbAPI.search_for_game_by_name(invalid_game_names[0], True)
     if ((not isinstance(games, list)) or (len(games) > 0)):
-        tests['games3'] = False
+        tests['games_by_name3'] = False
+
+    # games_by_offset test 0: -> test w/ default offset
+    games = igdbAPI.search_for_games()
+    if ((len(games) != 100) or (games[0]['id'] != 1)):
+        tests['games_by_offset0'] = False
+
+    # games_by_offset test 1: -> test w/ 100 offset
+    games = igdbAPI.search_for_games(100)
+    if ((len(games) != 100) or (games[0]['id'] != 101)):
+        print(games[0]['id'])
+        tests['games_by_offset1'] = False
 
     print_test_results("IGDB API", tests)
+
+
+# ==============================================================================
+# Test Compiling Games DB
+# ==============================================================================
+
+
+def test_complile_games_db(clientID):
+    return
+    scraper.compile_games_db(clientID)
 
 # ==============================================================================
 # Main Functions
@@ -205,6 +228,7 @@ def get_empty_test(test_names):
 # Runs all tests
 def main():
 
+
     # get secret API clientIDs
     credentials = open('credentials.json')
     credentials = json.load(credentials)
@@ -214,10 +238,12 @@ def main():
     testing = []
 
     # tests!
-    if ((len(testing) == 0) or ("TwitchAPI" in testing)):
+    if ((len(testing) == 0) or ("Twitch API" in testing)):
         test_twitch_api(credentials['twitch'])
     if ((len(testing) == 0) or ("IGDB API" in testing)):
         test_igdb_api(credentials['igdb'])
+    if ((len(testing) == 0) or ("Compile Games DB" in testing)):
+        test_complile_games_db(credentials['igdb'])
 
 
 # Run --------------------------------------------------------------------------

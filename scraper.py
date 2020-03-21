@@ -125,8 +125,8 @@ class IGDBAPI():
     # if result_as_array=True, then return the entire list of results from the IGDB search
     # otherwise, return just the first object
     def search_for_game_by_name(self, game_name, result_as_array = False):
+        time.sleep(self.sleep_period)
         games = []
-
         body = "search \"" + game_name + "\"; fields *;"
         r = requests.get('https://api-v3.igdb.com/games', data=body, headers=self.headers)
         if (r.status_code == 200):
@@ -139,10 +139,34 @@ class IGDBAPI():
         else:
             return False
 
+
+    # searches for games with ids within range (offset, offset + 100)
+    def search_for_games(self, offset = 0):
+        time.sleep(self.sleep_period)
+        
+        games = []
+        body = "fields *; sort id asc; limit 100; offset " + str(offset) + ";"
+        r = requests.get('https://api-v3.igdb.com/games', data=body, headers=self.headers)
+        if (r.status_code == 200):
+            games = r.json()
+
+        return games
+
 # ==============================================================================
 # Main Scraper
 # ==============================================================================
 
+# scrapes games and stores them in a CSV file
+# -> this function runs without any interaction with the Twitch API, so it will leave certain parameters blank
+#    (leaves twitch_box_art_url blank)
+def compile_games_db(igdbCredentials):
+
+    igdbAPI = IGDBAPI(igdbCredentials)
+
+    print("hello world")
+
+
+# Run the main scraper
 def run():
 
     # get secret API clientIDs
