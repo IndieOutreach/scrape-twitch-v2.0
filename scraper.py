@@ -13,6 +13,9 @@ import json
 import time
 import requests
 
+
+from games import *
+
 # ==============================================================================
 # Twitch API
 # ==============================================================================
@@ -141,16 +144,46 @@ class IGDBAPI():
 
 
     # searches for games with ids within range (offset, offset + 100)
+    # returns tuple (list_of_games, new_offset)
     def search_for_games(self, offset = 0):
         time.sleep(self.sleep_period)
-        
+
         games = []
         body = "fields *; sort id asc; limit 100; offset " + str(offset) + ";"
         r = requests.get('https://api-v3.igdb.com/games', data=body, headers=self.headers)
         if (r.status_code == 200):
             games = r.json()
 
-        return games
+        return games, offset + 100
+
+
+    # searches for the cover of games with IDs within range (offset, offset + 100)
+    # -> this action can return multiple covers for the same game, so we will pick the largest one for each game
+    # -> unlike .search_for_games(), this function returns a dictionary of form {'game_id': 'url'}
+    def search_for_game_covers(self, offset = 0):
+        time.sleep(self.sleep_period)
+
+        covers_by_game = {}
+        body = "fields *; sort game asc; limit 300; where game > " + str(offset) + " & game <= " + str(offset + 100) + ";"
+        r = requests.get('https://api-v3.igdb.com/covers', data=body, headers=self.headers)
+        if (r.status_code == 200):
+
+            # bucket covers by game ID so we can compare sizes and keep the max
+            for cover in r.json():
+                game_id = cover['game']
+                cover_size = cover['width'] * cover['height']
+                if (game_id not in covers_by_game):
+                    covers_by_game[game_id] = {'url': cover['url'], 'size': cover_size}
+                elif (cover_size > covers_by_game[game_id]['size']):
+                    covers_by_game[game_id] = {'url': cover['url'], 'size': cover_size}
+
+
+            # remove the size metric
+            for id in covers_by_game:
+                covers_by_game[id] = 'https:' + covers_by_game[id]['url']
+
+
+        return covers_by_game
 
 # ==============================================================================
 # Main Scraper
@@ -159,9 +192,21 @@ class IGDBAPI():
 # scrapes games and stores them in a CSV file
 # -> this function runs without any interaction with the Twitch API, so it will leave certain parameters blank
 #    (leaves twitch_box_art_url blank)
-def compile_games_db(igdbCredentials):
+def compile_games_db(igdb_credentials):
 
-    igdbAPI = IGDBAPI(igdbCredentials)
+    igdbAPI = IGDBAPI(igdb_credentials)
+    games = Games()
+
+    # loop over all games on IGDB going in ascending order by ID
+    offset = 0
+    search_results, offset = igdbAPI.search_for_games(offset)
+    while (len(search_results) > 0):
+        for igdb_game_obj in search_results:
+            games.add_new_game(igdb_game_obj)
+
+        games.print_stats()
+        search_results, offset = igdbAPI.search_for_games(offset)
+
 
     print("hello world")
 

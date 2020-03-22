@@ -51,6 +51,7 @@ Info about a game from IGDB
  - `keywords` - a list of keyword IDs
  - `themes` - a list of theme IDs
  - `platforms` - a list of platform IDs
+ - `rating` - rating of the game out of 100
  - `collection` - series of games it belongs to
  - `release_date` - date it was initially launched
  - `game_modes` - list of game mode IDs (single player, co-op, etc)
@@ -102,12 +103,16 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
- - Add IGDBAPI.search_for_games() to search for games by ID number (with a specified offset)
+ - Add IGDBAPI.search_for_game_covers()
+
+#### What is new but still in development?
+ - Add compile_games_db() to scraper.py to scrape all games from IGDB
+ - Create games.py to contain Game and Games classes
 
 #### What's next?
  - Function for scraping all livestreams on Twitch  
  - Function for scraping all games (isolated from the Twitch scraper) and creating games.csv
- - Add "streamer", "stream", and "game" classes
+ - Add "streamer", "stream" classes
 
 #### Future Roadmap
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)

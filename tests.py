@@ -10,6 +10,7 @@ import json
 
 import scraper
 from scraper import *
+from games import *
 
 # ==============================================================================
 # Test TwitchAPI
@@ -140,7 +141,8 @@ def test_igdb_api(clientID):
     igdbAPI = IGDBAPI(clientID)
     test_names = [
         'games_by_name0', 'games_by_name1', 'games_by_name2', 'games_by_name3',
-        'games_by_offset0', 'games_by_offset'
+        'games_by_offset0', 'games_by_offset1',
+        'game_covers0', 'game_covers1'
     ]
     tests = get_empty_test(test_names)
 
@@ -169,15 +171,29 @@ def test_igdb_api(clientID):
         tests['games_by_name3'] = False
 
     # games_by_offset test 0: -> test w/ default offset
-    games = igdbAPI.search_for_games()
-    if ((len(games) != 100) or (games[0]['id'] != 1)):
+    games, offset = igdbAPI.search_for_games()
+    if ((len(games) != 100) or (offset != 100) or (games[0]['id'] != 1)):
         tests['games_by_offset0'] = False
 
     # games_by_offset test 1: -> test w/ 100 offset
-    games = igdbAPI.search_for_games(100)
-    if ((len(games) != 100) or (games[0]['id'] != 101)):
-        print(games[0]['id'])
+    games, offset = igdbAPI.search_for_games(100)
+    if ((len(games) != 100) or (offset != 200) or (games[0]['id'] != 101)):
         tests['games_by_offset1'] = False
+
+    # games_covers test 0: -> test w/ default offset
+    covers = igdbAPI.search_for_game_covers()
+    if ((len(covers) != 100) or (not isinstance(covers, dict))):
+        tests['game_covers0'] = False
+
+    # games_covers test 1: -> test offset
+    min, max = (100000000, -1)
+    covers = igdbAPI.search_for_game_covers(100)
+    for game_id in covers:
+        max = game_id if (game_id > max) else max
+        min = game_id if (game_id < min) else min
+    if ((min != 101) or (max != 200)):
+        tests['game_covers1'] = False
+
 
     print_test_results("IGDB API", tests)
 
