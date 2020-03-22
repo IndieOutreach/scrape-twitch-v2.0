@@ -142,7 +142,7 @@ def test_igdb_api(clientID):
     test_names = [
         'games_by_name0', 'games_by_name1', 'games_by_name2', 'games_by_name3',
         'games_by_offset0', 'games_by_offset1',
-        'game_covers0', 'game_covers1'
+        'game_covers0', 'game_covers1', 'game_covers2', 'game_covers3', 'game_covers4'
     ]
     tests = get_empty_test(test_names)
 
@@ -180,12 +180,12 @@ def test_igdb_api(clientID):
     if ((len(games) != 100) or (offset != 200) or (games[0]['id'] != 101)):
         tests['games_by_offset1'] = False
 
-    # games_covers test 0: -> test w/ default offset
+    # game_covers test 0: -> test w/ default offset
     covers = igdbAPI.search_for_game_covers()
     if ((len(covers) != 100) or (not isinstance(covers, dict))):
         tests['game_covers0'] = False
 
-    # games_covers test 1: -> test offset
+    # game_covers test 1: -> test offset
     min, max = (100000000, -1)
     covers = igdbAPI.search_for_game_covers(100)
     for game_id in covers:
@@ -194,6 +194,23 @@ def test_igdb_api(clientID):
     if ((min != 101) or (max != 200)):
         tests['game_covers1'] = False
 
+
+    # game_covers 2: -> make sure that games in .search_for_games() have a 'igdb_box_art_url'
+    games, offset = igdbAPI.search_for_games()
+    if (('igdb_box_art_url' not in games[0]) or ('images.igdb.com' not in games[0]['igdb_box_art_url'])):
+        tests['game_covers2'] = False
+
+
+    # game_covers 3: -> make sure that games in .search_for_game_by_name() have 'igdb_box_art_url'
+    game = igdbAPI.search_for_game_by_name(game_names[0])
+    if (('igdb_box_art_url' not in game) or ('images.igdb.com' not in game['igdb_box_art_url'])):
+        tests['game_covers3'] = False
+
+    # games_covers4: -> make sure that all games in results for .search_for_game_by_name() get 'igdb_box_art_url's
+    games = igdbAPI.search_for_game_by_name(game_names[0], True)
+    for game in games:
+        if (('igdb_box_art_url' not in game) or ('images.igdb.com' not in game['igdb_box_art_url'])):
+            tests['game_covers4'] = False
 
     print_test_results("IGDB API", tests)
 

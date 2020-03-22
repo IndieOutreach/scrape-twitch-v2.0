@@ -133,7 +133,12 @@ class IGDBAPI():
         body = "search \"" + game_name + "\"; fields *;"
         r = requests.get('https://api-v3.igdb.com/games', data=body, headers=self.headers)
         if (r.status_code == 200):
-            games = r.json()
+            for game in r.json():
+                game_id = game['id']
+                covers = self.search_for_game_covers(max(game_id - 1, 1))
+                if (game_id in covers):
+                    game['igdb_box_art_url'] = covers[game_id]
+                games.append(game)
 
         if (result_as_array == True):
             return games
@@ -152,7 +157,11 @@ class IGDBAPI():
         body = "fields *; sort id asc; limit 100; offset " + str(offset) + ";"
         r = requests.get('https://api-v3.igdb.com/games', data=body, headers=self.headers)
         if (r.status_code == 200):
-            games = r.json()
+            game_covers = self.search_for_game_covers(offset)
+            for game in r.json():
+                game_id = game['id']
+                game['igdb_box_art_url'] = game_covers[game_id] if (game_id in game_covers) else ""
+                games.append(game)
 
         return games, offset + 100
 

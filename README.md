@@ -103,9 +103,9 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
- - Add IGDBAPI.search_for_game_covers()
+ - IGDBAPI.search_for_game_by_name() and IGDBAPI.search_for_games() now automatically call IGDBAPI.search_for_game_covers() and attaches them to the game objects
 
-#### What is new but still in development?
+#### What is still in development?
  - Add compile_games_db() to scraper.py to scrape all games from IGDB
  - Create games.py to contain Game and Games classes
 
