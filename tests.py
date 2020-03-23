@@ -221,8 +221,98 @@ def test_igdb_api(clientID):
 
 
 def test_complile_games_db(clientID):
-    return
-    scraper.compile_games_db(clientID)
+
+    test_names = [
+        'compile0', 'compile1',
+        'data0', 'data1',
+        'load0'
+    ]
+    tests = get_empty_test(test_names)
+
+    # compile test 0: -> scrape 100 Games
+    games = scraper.compile_games_db(clientID, 200)
+    game_ids = games.get_ids()
+    if (len(game_ids) != 100):
+        tests['compile0'] = False
+    else:
+        for i in range(1, 100):
+            if (i not in game_ids):
+                tests['compile0'] = False
+
+    # compile test 1: -> scrape 200 games
+    games = scraper.compile_games_db(clientID, 300)
+    game_ids = games.get_ids()
+    if (len(game_ids) != 200):
+        tests['compile1'] = False
+    else:
+        for i in range(1, 200):
+            if ((i not in game_ids) and (i != 165)): # <- 165 is missing in IGDB for some reason
+                tests['compile1'] = False
+
+
+    # data test 0: -> make sure data within a game is actually what we are expecting
+    game = games.get(1) # <- this should be Thief
+    if ((game == False) or (not validate_game(game, 1, "Thief II: The Metal Age"))):
+        tests['data0'] = False
+
+    # data test 1: -> make sure data within a different game is actually what we are expecting
+    games = scraper.compile_games_db(clientID, 1000)
+    game = games.get(740) # <- this should be Halo
+    if ((game == False) or (not validate_game(game, 740, "Halo: Combat Evolved"))):
+        tests['data1'] = False
+
+
+    # load test 0: -> save data to .CSV, load it back into memory, and check if its the same
+    games.export_to_csv('./test_csv_output/games.csv')
+    new_games = Games('./test_csv_output/games.csv')
+    if (not games.check_if_game_collections_same(new_games)):
+        tests['data0'] = False
+    elif (not validate_game(games.get(740), 740, "Halo: Combat Evolved")):
+        tests['data0'] = False
+
+
+    print_test_results("Compile Games DB", tests)
+
+
+# makes sure that a Game has the right types on its attributes
+def validate_game(game, expected_game_id, expected_title):
+    game_obj = game.to_dict()
+    if (
+        (game_obj['id'] != expected_game_id)                       or
+        (game_obj['name'] != expected_title)                       or
+        (not validate_igdb_array(game_obj, "genres"))              or
+        (not validate_igdb_array(game_obj, "keywords"))            or
+        (not validate_igdb_array(game_obj, "themes"))              or
+        (not validate_igdb_array(game_obj, "platforms"))           or
+        (not validate_igdb_array(game_obj, "player_perspectives")) or
+        (not validate_igdb_array(game_obj, "similar_games"))       or
+        (not validate_igdb_array(game_obj, "age_ratings"))         or
+        (not validate_igdb_array(game_obj, "game_modes"))          or
+        (not isinstance(game_obj['category'], int))                or
+        (not isinstance(game_obj['release_date'], int))            or
+        (not isinstance(game_obj['popularity'], float))            or
+        (not isinstance(game_obj['collection'], int))              or
+        (not isinstance(game_obj['time_to_beat'], int))            or
+        ((not isinstance(game_obj['igdb_box_art_url'], str)))      or
+        (('images.igdb.com' not in game_obj['igdb_box_art_url']))  or
+        (not isinstance(game_obj['twitch_box_art_url'], str))
+        ):
+        return False
+    return True
+
+# takes in an Array of integer IDs from a game Object
+# returns True if the format is correct
+def validate_igdb_array(game_obj, list_name):
+    if (list_name not in game_obj):
+        return False
+    list_obj = game_obj[list_name]
+    if (not isinstance(list_obj, list)):
+        return False
+    elif (len(list_obj) == 0):
+        return False
+    elif (not isinstance(list_obj[0], int)):
+        return False
+    return True
 
 # ==============================================================================
 # Main Functions

@@ -17,7 +17,7 @@ This scraping tool is built in Python 3.7.6 and uses the requests library for in
  - run `python tests.py` to run the test suite and make sure all components of the scraper work
 
 
-## Files
+## Folders and Files
 
 #### scraper.py
 Used for scraping data from the Twitch API
@@ -25,6 +25,14 @@ Used for scraping data from the Twitch API
 #### tests.py
 Testing script that checks functionality in scraper.py
 
+#### games.py
+Contains the Games() and Game() classes
+
+#### /data
+Folder contains all the .csv files that scraper compiles
+
+#### /test_csv_output
+Folder contains all the .csv files that are generated during testing
 
 ## Raw Data
 Data that is scraped and used or stored.
@@ -103,15 +111,14 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
- - IGDBAPI.search_for_game_by_name() and IGDBAPI.search_for_games() now automatically call IGDBAPI.search_for_game_covers() and attaches them to the game objects
+ - scraper.compile_games_db() now scrapes the first 5,000 games from IGDB and stores it in ./data/games.csv
 
-#### What is still in development?
- - Add compile_games_db() to scraper.py to scrape all games from IGDB
- - Create games.py to contain Game and Games classes
+#### What is still in development? Known Issues?
+ - scraper.compile_games_db() is only using "offset" to get results, so it hits the "offset" limit imposed by IGDB
+  - Instead, scraper should be using a "WHERE" statement in the search API call
 
 #### What's next?
  - Function for scraping all livestreams on Twitch  
- - Function for scraping all games (isolated from the Twitch scraper) and creating games.csv
  - Add "streamer", "stream" classes
 
 #### Future Roadmap

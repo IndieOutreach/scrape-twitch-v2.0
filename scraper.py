@@ -198,10 +198,11 @@ class IGDBAPI():
 # Main Scraper
 # ==============================================================================
 
-# scrapes games and stores them in a CSV file
+# scrapes games from IGDB into a Games collection
 # -> this function runs without any interaction with the Twitch API, so it will leave certain parameters blank
 #    (leaves twitch_box_art_url blank)
-def compile_games_db(igdb_credentials):
+# limit defaults to an equivalent to +inf. Drop it to a low int for testing purposes (only get the first X=limit games)
+def compile_games_db(igdb_credentials, limit = 9999999):
 
     igdbAPI = IGDBAPI(igdb_credentials)
     games = Games()
@@ -209,15 +210,13 @@ def compile_games_db(igdb_credentials):
     # loop over all games on IGDB going in ascending order by ID
     offset = 0
     search_results, offset = igdbAPI.search_for_games(offset)
-    while (len(search_results) > 0):
+    while (len(search_results) > 0 and (offset < limit)):
         for igdb_game_obj in search_results:
             games.add_new_game(igdb_game_obj)
 
-        games.print_stats()
         search_results, offset = igdbAPI.search_for_games(offset)
 
-
-    print("hello world")
+    return games
 
 
 # Run the main scraper
@@ -232,6 +231,10 @@ def run():
     igdbAPI = IGDBAPI(credentials['igdb'])
 
 
+    # scrape the IGDB database for games
+    igdbGames = compile_games_db(credentials['igdb'])
+    igdbGames.export_to_csv('./data/games.csv')
+    igdbGames.print_stats()
 
 # Run --------------------------------------------------------------------------
 

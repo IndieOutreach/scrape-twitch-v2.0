@@ -1,2 +1,4 @@
 credentials.json
 __pycache__/
+test_csv_output/*
+data/*
