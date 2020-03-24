@@ -122,7 +122,7 @@ class IGDBAPI():
 
     def __init__(self, client_id):
         self.headers = {'user-key': client_id, 'Accept': 'application/json'}
-        self.sleep_period = 0.01
+        self.sleep_period = 0.075
 
     # searches the IGDB API for a game
     # if result_as_array=True, then return the entire list of results from the IGDB search
@@ -154,38 +154,51 @@ class IGDBAPI():
         time.sleep(self.sleep_period)
 
         games = []
-        body = "fields *; sort id asc; limit 100; offset " + str(offset) + ";"
+        body = "fields *; sort id asc; limit 500; where id > " + str(offset) + ";"
         r = requests.get('https://api-v3.igdb.com/games', data=body, headers=self.headers)
         if (r.status_code == 200):
+
             game_covers = self.search_for_game_covers(offset)
+            for game_id, cover in self.search_for_game_covers(offset + 125).items():
+                game_covers[game_id] = cover
+            for game_id, cover in self.search_for_game_covers(offset + 250).items():
+                game_covers[game_id] = cover
+            for game_id, cover in self.search_for_game_covers(offset + 375).items():
+                game_covers[game_id] = cover
+
             for game in r.json():
                 game_id = game['id']
                 game['igdb_box_art_url'] = game_covers[game_id] if (game_id in game_covers) else ""
                 games.append(game)
 
-        return games, offset + 100
+        return games, offset + 500
 
 
-    # searches for the cover of games with IDs within range (offset, offset + 100)
+    # searches for the cover of games with IDs within range (offset, offset + 125)
+    # Note: 125 is arbitrarily picked so that there is ample room in the 500 results
     # -> this action can return multiple covers for the same game, so we will pick the largest one for each game
     # -> unlike .search_for_games(), this function returns a dictionary of form {'game_id': 'url'}
     def search_for_game_covers(self, offset = 0):
         time.sleep(self.sleep_period)
 
         covers_by_game = {}
-        body = "fields *; sort game asc; limit 300; where game > " + str(offset) + " & game <= " + str(offset + 100) + ";"
+        body = "fields *; sort game asc; limit 500; where game > " + str(offset) + " & game <= " + str(offset + 125) + ";"
         r = requests.get('https://api-v3.igdb.com/covers', data=body, headers=self.headers)
         if (r.status_code == 200):
 
             # bucket covers by game ID so we can compare sizes and keep the max
             for cover in r.json():
                 game_id = cover['game']
-                cover_size = cover['width'] * cover['height']
-                if (game_id not in covers_by_game):
-                    covers_by_game[game_id] = {'url': cover['url'], 'size': cover_size}
-                elif (cover_size > covers_by_game[game_id]['size']):
-                    covers_by_game[game_id] = {'url': cover['url'], 'size': cover_size}
 
+                if (('width' in cover) and ('height' in cover)):
+                    cover_size = cover['width'] * cover['height']
+                    if (game_id not in covers_by_game):
+                        covers_by_game[game_id] = {'url': cover['url'], 'size': cover_size}
+                    elif (cover_size > covers_by_game[game_id]['size']):
+                        covers_by_game[game_id] = {'url': cover['url'], 'size': cover_size}
+
+                elif (game_id not in covers_by_game): # <- account for rare cases where cover doesn't have size specs
+                    covers_by_game[game_id] = {'url': cover['url'], 'size': 0}
 
             # remove the size metric
             for id in covers_by_game:
@@ -202,6 +215,7 @@ class IGDBAPI():
 # -> this function runs without any interaction with the Twitch API, so it will leave certain parameters blank
 #    (leaves twitch_box_art_url blank)
 # limit defaults to an equivalent to +inf. Drop it to a low int for testing purposes (only get the first X=limit games)
+# -> because of the way offset works, add 500 (size of an API result) to ensure the API returns all values up to the limit
 def compile_games_db(igdb_credentials, limit = 9999999):
 
     igdbAPI = IGDBAPI(igdb_credentials)
@@ -210,10 +224,11 @@ def compile_games_db(igdb_credentials, limit = 9999999):
     # loop over all games on IGDB going in ascending order by ID
     offset = 0
     search_results, offset = igdbAPI.search_for_games(offset)
-    while (len(search_results) > 0 and (offset < limit)):
+    while (len(search_results) > 0 and (offset < limit + 500)):
         for igdb_game_obj in search_results:
             games.add_new_game(igdb_game_obj)
 
+        games.print_stats()
         search_results, offset = igdbAPI.search_for_games(offset)
 
     return games

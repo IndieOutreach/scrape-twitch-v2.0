@@ -172,17 +172,17 @@ def test_igdb_api(clientID):
 
     # games_by_offset test 0: -> test w/ default offset
     games, offset = igdbAPI.search_for_games()
-    if ((len(games) != 100) or (offset != 100) or (games[0]['id'] != 1)):
+    if ((len(games) != 500) or (offset != 500) or (games[0]['id'] != 1)):
         tests['games_by_offset0'] = False
 
     # games_by_offset test 1: -> test w/ 100 offset
-    games, offset = igdbAPI.search_for_games(100)
-    if ((len(games) != 100) or (offset != 200) or (games[0]['id'] != 101)):
+    games, offset = igdbAPI.search_for_games(500)
+    if ((len(games) != 500) or (offset != 1000) or (games[0]['id'] != 501)):
         tests['games_by_offset1'] = False
 
     # game_covers test 0: -> test w/ default offset
     covers = igdbAPI.search_for_game_covers()
-    if ((len(covers) != 100) or (not isinstance(covers, dict))):
+    if ((len(covers) != 125) or (not isinstance(covers, dict))):
         tests['game_covers0'] = False
 
     # game_covers test 1: -> test offset
@@ -191,7 +191,7 @@ def test_igdb_api(clientID):
     for game_id in covers:
         max = game_id if (game_id > max) else max
         min = game_id if (game_id < min) else min
-    if ((min != 101) or (max != 200)):
+    if ((min != 101) or (max != 225)):
         tests['game_covers1'] = False
 
 
@@ -228,25 +228,26 @@ def test_complile_games_db(clientID):
         'load0'
     ]
     tests = get_empty_test(test_names)
+    known_missing_indexes = [165, 315, 577, 579, 580, 581]
 
-    # compile test 0: -> scrape 100 Games
-    games = scraper.compile_games_db(clientID, 200)
+    # compile test 0: -> scrape 500 Games
+    games = scraper.compile_games_db(clientID, 500)
     game_ids = games.get_ids()
-    if (len(game_ids) != 100):
+    if (len(game_ids) != 500):
         tests['compile0'] = False
     else:
-        for i in range(1, 100):
-            if (i not in game_ids):
+        for i in range(1, 503):
+            if ((i not in game_ids) and (i not in known_missing_indexes)):
                 tests['compile0'] = False
 
     # compile test 1: -> scrape 200 games
-    games = scraper.compile_games_db(clientID, 300)
+    games = scraper.compile_games_db(clientID, 1000)
     game_ids = games.get_ids()
-    if (len(game_ids) != 200):
+    if (len(game_ids) < 990):
         tests['compile1'] = False
     else:
-        for i in range(1, 200):
-            if ((i not in game_ids) and (i != 165)): # <- 165 is missing in IGDB for some reason
+        for i in range(1, 1000):
+            if ((i not in game_ids) and (i not in known_missing_indexes)):
                 tests['compile1'] = False
 
 
@@ -256,7 +257,7 @@ def test_complile_games_db(clientID):
         tests['data0'] = False
 
     # data test 1: -> make sure data within a different game is actually what we are expecting
-    games = scraper.compile_games_db(clientID, 1000)
+    games = scraper.compile_games_db(clientID, 1500)
     game = games.get(740) # <- this should be Halo
     if ((game == False) or (not validate_game(game, 740, "Halo: Combat Evolved"))):
         tests['data1'] = False
@@ -276,6 +277,9 @@ def test_complile_games_db(clientID):
 
 # makes sure that a Game has the right types on its attributes
 def validate_game(game, expected_game_id, expected_title):
+    if (game == False):
+        return False
+
     game_obj = game.to_dict()
     if (
         (game_obj['id'] != expected_game_id)                       or
@@ -351,10 +355,10 @@ def get_empty_test(test_names):
 # Runs all tests
 def main():
 
-
     # get secret API clientIDs
     credentials = open('credentials.json')
     credentials = json.load(credentials)
+
 
     # declare what tests to run - reference if statements below for test codes to add
     # -> if this list is empty, run all tests

@@ -111,11 +111,12 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
- - scraper.compile_games_db() now scrapes the first 5,000 games from IGDB and stores it in ./data/games.csv
+ - convert IGDBAPI.search_for_games() to use 'where' statements instead of offset to get around the 5000 item offset limit
+ - Switch 'limit' value in IGDBAPI.search_for_games from 100->500 (the API max)
+ - As of this commit, scraper.py can scrape and save all 128,853 games currently on IGDB 
 
 #### What is still in development? Known Issues?
- - scraper.compile_games_db() is only using "offset" to get results, so it hits the "offset" limit imposed by IGDB
-  - Instead, scraper should be using a "WHERE" statement in the search API call
+ - nothing to report
 
 #### What's next?
  - Function for scraping all livestreams on Twitch  

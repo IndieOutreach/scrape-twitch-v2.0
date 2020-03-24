@@ -125,7 +125,7 @@ class Games():
         return self.games.keys()
 
     def print_stats(self):
-        print("number of items in collection: ", len(self.games))
+        print("number of Games in collection: ", len(self.games))
 
     # File I/O -----------------------------------------------------------------
 
