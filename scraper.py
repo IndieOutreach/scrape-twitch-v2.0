@@ -247,9 +247,10 @@ def run():
 
 
     # scrape the IGDB database for games
-    igdbGames = compile_games_db(credentials['igdb'])
-    igdbGames.export_to_csv('./data/games.csv')
-    igdbGames.print_stats()
+    if (("-g" in sys.argv) or ("--games" in sys.argv)):
+        igdbGames = compile_games_db(credentials['igdb'])
+        igdbGames.export_to_csv('./data/games.csv')
+        igdbGames.print_stats()
 
 # Run --------------------------------------------------------------------------
 

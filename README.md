@@ -13,14 +13,18 @@ This scraping tool is built in Python 3.7.6 and uses the requests library for in
  - Create './credentials.json' with content: `{"twitch": "YOUR_TWITCH_CLIENT_ID", "igdb": "YOUR_IGDB_USER_KEY"}` so scraper.py can access the necessary APIs using your account info.
 
 #### How to Run
- - run `python scraper.py` to run the scraper
  - run `python tests.py` to run the test suite and make sure all components of the scraper work
+ - run `python scraper.py {flags}` to run the scraper. See section below about flag options
+
 
 
 ## Folders and Files
 
 #### scraper.py
-Used for scraping data from the Twitch API
+Used for scraping data from the Twitch and IGDB APIs
+
+Flags:
+ - `-g` or `--games`: uses the IGDB API to compile all games from IGDB into '/data/games.csv'
 
 #### tests.py
 Testing script that checks functionality in scraper.py
@@ -111,9 +115,7 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
- - convert IGDBAPI.search_for_games() to use 'where' statements instead of offset to get around the 5000 item offset limit
- - Switch 'limit' value in IGDBAPI.search_for_games from 100->500 (the API max)
- - As of this commit, scraper.py can scrape and save all 128,853 games currently on IGDB 
+ - Update scraper.py to use command line arguments. Now you have to run `python scraper.py -g` for it to run .compile_games_db() and save it
 
 #### What is still in development? Known Issues?
  - nothing to report
