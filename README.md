@@ -10,7 +10,10 @@ This scraping tool is built in Python 3.7.6 and uses the requests library for in
 
 #### Instructions
  - Clone this repo
- - Create './credentials.json' with content: `{"twitch": "YOUR_TWITCH_CLIENT_ID", "igdb": "YOUR_IGDB_USER_KEY"}` so scraper.py can access the necessary APIs using your account info.
+ - Create your own `./credentials.json` (format specified below) so scraper.py can access the necessary APIs using your account info.
+
+#### pip installations
+ - `requests-oauthlib` for making OAuth2 requests to Twitch's API
 
 #### How to Run
  - run `python tests.py` to run the test suite and make sure all components of the scraper work
@@ -25,12 +28,24 @@ Used for scraping data from the Twitch and IGDB APIs
 
 Flags:
  - `-g` or `--games`: uses the IGDB API to compile all games from IGDB into '/data/games.csv'
+ - `-s` or `--streamers`: use the Twitch API to scrape all livestreams on Twitch, search for streamer profiles, and use that to build '/data/streamers.csv'
+  - this option will also add 'twitch_box_art_url' to Games from '/data/games.csv' where necessary
+  - this option will add Twitch->IGDB ID conversions as well
 
 #### tests.py
 Testing script that checks functionality in scraper.py
 
 #### games.py
 Contains the Games() and Game() classes
+
+#### streamers.py
+Contains the Stream(), Streamer(), and Streamers() classes
+
+#### credentials.py
+credentials.py holds API credentials for both Twitch and IGDB
+Format:
+ -  `{"twitch": {"client_id": "YOUR_APPS_CLIENT_ID", "client_secret": "YOUR_APPS_CLIENT_SECRET"}, "igdb": "YOUR_IGDB_USER_KEY"}`
+
 
 #### /data
 Folder contains all the .csv files that scraper compiles
@@ -115,10 +130,13 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
- - Update scraper.py to use command line arguments. Now you have to run `python scraper.py -g` for it to run .compile_games_db() and save it
+- Update Twitch API to use new OAuth Client-ID
+- Create streamers.py to contain Stream, Streamer, and Streamers classes
+- create scraper.scrape_streamers() to scrape livestreams on Twitch, will eventually scrape and save streamers 
 
 #### What is still in development? Known Issues?
- - nothing to report
+ - scrape_streamers() only scrapes livestreams right now -> it does not make any calls for videos/streamers
+ - scrape_streamers() runs into a rate limit from Twitch
 
 #### What's next?
  - Function for scraping all livestreams on Twitch  
@@ -130,4 +148,3 @@ Lookup tables that map { igdbID: name }
  - Scraping Algorithm
  - export to CSV
  - load from CSV
- - Update Twitch API to use new OAuth Client-ID before April

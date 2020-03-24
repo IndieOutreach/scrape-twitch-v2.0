@@ -11,6 +11,7 @@ import json
 import scraper
 from scraper import *
 from games import *
+from streamers import *
 
 # ==============================================================================
 # Test TwitchAPI
@@ -318,6 +319,29 @@ def validate_igdb_array(game_obj, list_name):
         return False
     return True
 
+
+# ==============================================================================
+# Test Scrape Streamers
+# ==============================================================================
+
+
+def test_scrape_streamers(twitch_credentials, igdb_credentials):
+
+    #scraper.scrape_streamers(twitch_credentials)
+    return
+
+    twitchAPI = TwitchAPI(twitch_credentials)
+    igdbAPI = IGDBAPI(igdb_credentials)
+
+    test_names = [
+        'compile0'
+    ]
+    tests = get_empty_test(test_names)
+
+
+
+    print_test_results("Scrape Streamers", tests)
+
 # ==============================================================================
 # Main Functions
 # ==============================================================================
@@ -371,6 +395,8 @@ def main():
         test_igdb_api(credentials['igdb'])
     if ((len(testing) == 0) or ("Compile Games DB" in testing)):
         test_complile_games_db(credentials['igdb'])
+    if ((len(testing) == 0) or ("Scrape Streamers" in testing)):
+        test_scrape_streamers(credentials['twitch'], credentials['igdb'])
 
 
 # Run --------------------------------------------------------------------------

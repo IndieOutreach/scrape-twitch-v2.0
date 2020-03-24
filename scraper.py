@@ -13,8 +13,8 @@ import json
 import time
 import requests
 
-
 from games import *
+from streamers import *
 
 # ==============================================================================
 # Twitch API
@@ -22,9 +22,24 @@ from games import *
 
 class TwitchAPI():
 
-    def __init__(self, client_id):
-        self.headers = {'Client-ID': client_id}
-        self.sleep_period = 0.1
+    def __init__(self, twitch_credentials):
+
+        # Twitch uses OAuth2, so we need to grab an access_token
+        params = {
+            'client_id': twitch_credentials['client_id'],
+            'client_secret': twitch_credentials['client_secret'],
+            'grant_type': 'client_credentials'
+        }
+        r = requests.post("https://id.twitch.tv/oauth2/token", params=params)
+        if (r.status_code == 200):
+            data = r.json()
+            self.headers = {'Authorization': 'Bearer ' + data['access_token']}
+        else:
+            self.headers = False
+
+        self.sleep_period = 0.5
+
+
 
     # takes in a list of items and converts it into a list of tuples
     # [streamer_id, streamer_id2, ...] -> [(id, streamer_id), (id, streamer_id2), ...]
@@ -53,6 +68,9 @@ class TwitchAPI():
             data = r.json()
             livestreams = data['data']
             cursor = data['pagination']['cursor']
+        else:
+            print("Error!")
+            print(r.text)
         return livestreams, cursor
 
 
@@ -122,7 +140,7 @@ class IGDBAPI():
 
     def __init__(self, client_id):
         self.headers = {'user-key': client_id, 'Accept': 'application/json'}
-        self.sleep_period = 0.075
+        self.sleep_period = 0.075 # <- to be polite to IGDB's servers
 
     # searches the IGDB API for a game
     # if result_as_array=True, then return the entire list of results from the IGDB search
@@ -234,6 +252,26 @@ def compile_games_db(igdb_credentials, limit = 9999999):
     return games
 
 
+# scrapes all current livestreams on twitch and compiles them into a collection of Streamers
+# -> loads pre-existing streamers from /data/streamers.csv
+def scrape_streamers(twitch_credentials):
+
+    twitchAPI = TwitchAPI(twitch_credentials)
+
+    streamers = Streamers() # <- LOAD STREAMERS FROM CSV FILE
+    streams = []
+
+    # get all livestreams currently on Twitch
+    livestreams, cursor = twitchAPI.get_livestreams()
+    while (len(livestreams) > 0):
+        for livestream in livestreams:
+            streams.append(Stream(livestream))
+        print(len(streams))
+        livestreams, cursor = twitchAPI.get_livestreams(cursor)
+
+    print("length of streams: ", len(streams))
+
+
 # Run the main scraper
 def run():
 
@@ -241,16 +279,15 @@ def run():
     credentials = open('credentials.json')
     credentials = json.load(credentials)
 
-    # initialize the Twitch and IGDB APIs
-    twitchAPI = TwitchAPI(credentials['twitch'])
-    igdbAPI = IGDBAPI(credentials['igdb'])
-
-
     # scrape the IGDB database for games
     if (("-g" in sys.argv) or ("--games" in sys.argv)):
         igdbGames = compile_games_db(credentials['igdb'])
         igdbGames.export_to_csv('./data/games.csv')
         igdbGames.print_stats()
+
+
+    if (("-s" in sys.argv) or ("--streamers" in sys.argv)):
+        streamers = scrape_streamers(credentials['twitch'])
 
 # Run --------------------------------------------------------------------------
 
