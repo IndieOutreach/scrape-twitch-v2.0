@@ -130,13 +130,10 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
-- Update Twitch API to use new OAuth Client-ID
-- Create streamers.py to contain Stream, Streamer, and Streamers classes
-- create scraper.scrape_streamers() to scrape livestreams on Twitch, will eventually scrape and save streamers 
+- Update TwitchAPI's sleep function to take Twitch's ratelimit into account
 
 #### What is still in development? Known Issues?
  - scrape_streamers() only scrapes livestreams right now -> it does not make any calls for videos/streamers
- - scrape_streamers() runs into a rate limit from Twitch
 
 #### What's next?
  - Function for scraping all livestreams on Twitch  
