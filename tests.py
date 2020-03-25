@@ -26,7 +26,7 @@ def test_twitch_api(clientID):
         'streamers0', 'streamers1', 'streamers2', 'streamers3',
         'followers0', 'followers1',
         'livestreams0', 'livestreams1', 'livestreams2',
-        'videos0', 'videos1', 'videos2', 'videos3'
+        'videos0', 'videos1', 'videos2', 'videos3', 'videos4'
     ]
     tests = get_empty_test(test_names)
 
@@ -112,20 +112,29 @@ def test_twitch_api(clientID):
     if (len(videos) < 5):
         tests['videos0'] = False
 
-    # videos test 1: -> get a limited number of videos from streamer
-    videos, cursor = twitchAPI.get_videos(streamer_ids[0], False, 10)
-    if (len(videos) < 1 or len(videos) > 10):
+    # videos test 1: -> check to see if game name in video results
+    # -> validating that TwitchAPI.get_videos() successfully calls .get_game_name_in_video() and attaches to video object
+    game_found = False
+    for video in videos:
+        if (video['game_name'] != ""):
+            game_found = True
+    if (not game_found):
         tests['videos1'] = False
 
-    # videos test 2: -> use cursor from videos test 1 to grab more streamer videos
-    videos, cursor = twitchAPI.get_videos(streamer_ids[0], cursor)
-    if (len(videos) < 1):
+    # videos test 2: -> get a limited number of videos from streamer
+    videos, cursor = twitchAPI.get_videos(streamer_ids[0], False, 10)
+    if (len(videos) < 1 or len(videos) > 10):
         tests['videos2'] = False
 
-    # videos test 3: -> use cursor from videos test 2 to check what happens when you reach the end
+    # videos test 3: -> use cursor from videos test 1 to grab more streamer videos
+    videos, cursor = twitchAPI.get_videos(streamer_ids[0], cursor)
+    if (len(videos) < 1):
+        tests['videos3'] = False
+
+    # videos test 4: -> use cursor from videos test 2 to check what happens when you reach the end
     videos, cursor = twitchAPI.get_videos(streamer_ids[0], cursor)
     if (cursor != False or len(videos) != 0):
-        tests['videos3'] = False
+        tests['videos4'] = False
 
 
     print_test_results("TwitchAPI", tests)

@@ -37,6 +37,10 @@ class TwitchAPI():
         else:
             self.headers = False
 
+        # create headers for the deprecated v5 API
+        self.v5API_headers = {'Client-ID': twitch_credentials['v5_client_id'], 'Accept': 'application/vnd.twitchtv.v5+json'}
+
+
 
 
     # takes in a list of items and converts it into a list of tuples
@@ -93,16 +97,35 @@ class TwitchAPI():
     # gets a list of videos by a given streamer
     # src: https://dev.twitch.tv/docs/api/reference#get-videos
     def get_videos(self, streamer_id, previous_cursor = False, quantity = '100'):
+        videos = []
         quantity = str(quantity) if (isinstance(quantity, int)) else quantity
         params = {'user_id': streamer_id, 'first': quantity}
         if (previous_cursor != False):
             params['after'] = previous_cursor
         r = requests.get('https://api.twitch.tv/helix/videos', params=params, headers=self.headers)
-        data = r.json()
-        videos = data['data']
-        cursor = False if ('cursor' not in data['pagination']) else data['pagination']['cursor']
+        if (r.status_code == 200):
+            data = r.json()
+            for video in data['data']:
+                video['game_name'] = self.get_game_name_in_video(video['id'])
+                videos.append(video)
+            cursor = False if ('cursor' not in data['pagination']) else data['pagination']['cursor']
+        else:
+            cursor = False
         self.__sleep(r.headers)
         return videos, cursor
+
+    # returns the string name of a game played in a specified video
+    # -> this uses the deprecated V5 API because the New API doesn't have this functionality
+    def get_game_name_in_video(self, video_id):
+        game = ""
+        video_id = str(video_id) if (isinstance(video_id, int)) else video_id
+        url = 'https://api.twitch.tv/kraken/videos/' + video_id
+        r = requests.get(url, headers=self.v5API_headers)
+        if (r.status_code == 200):
+            data = r.json()
+            game = data['game']
+        self.__sleep(r.headers)
+        return game
 
 
     # gets the total # of followers for a given streamer
@@ -227,6 +250,9 @@ class IGDBAPI():
 # Main Scraper
 # ==============================================================================
 
+
+# Compiling Games DB -----------------------------------------------------------
+
 # scrapes games from IGDB into a Games collection
 # -> this function runs without any interaction with the Twitch API, so it will leave certain parameters blank
 #    (leaves twitch_box_art_url blank)
@@ -250,9 +276,11 @@ def compile_games_db(igdb_credentials, limit = 9999999):
     return games
 
 
+# Scrape Streamers -------------------------------------------------------------
+
 # scrapes all current livestreams on twitch and compiles them into a collection of Streamers
 # -> loads pre-existing streamers from /data/streamers.csv
-def scrape_streamers(twitch_credentials):
+def scrape_streamers(twitch_credentials, limit = 9999999):
 
     twitchAPI = TwitchAPI(twitch_credentials)
 
@@ -260,15 +288,83 @@ def scrape_streamers(twitch_credentials):
     streams = []
 
     # get all livestreams currently on Twitch
+    print("1. Scraping Livestreams...")
     livestreams, cursor = twitchAPI.get_livestreams()
-    while (len(livestreams) > 0):
+    while ((len(livestreams) > 0) and (len(streams) < limit)):
         for livestream in livestreams:
             streams.append(Stream(livestream))
-        print(len(streams))
+        print("livestreams: ", len(streams))
         livestreams, cursor = twitchAPI.get_livestreams(cursor)
 
-    print("length of streams: ", len(streams))
+    # loop over livestreams to access streamers
+    # -> we can look up streamer profiles in bulk (batches of 100 IDs)
+    #    so we want to break our livestreams into batches
+    print("2. loop over streamers")
+    batches_of_streams = create_batches(streams, 100)
+    for batch in batches_of_streams:
 
+        # get a list of all streamer_ids for this batch
+        streamer_ids = []
+        languages = {}
+        created_at = {}
+        for stream in batch:
+            streamer_ids.append(stream.user_id)
+            languages[stream.user_id] = stream.language
+            created_at[stream.user_id] = stream.date # <- if this value is same as saved streamer value, we can ignore this streamer
+
+        # search for streamer objects and create a lookup table {streamer_id -> streamer object}
+        streamer_lookup = {}
+        for user in twitchAPI.get_streamers(streamer_ids):
+            user_id = user['id']
+            user['num_followers']    = twitchAPI.get_followers(user_id)
+            user['language']         = languages[user_id]
+            user['last_updated']     = created_at[user_id]
+            streamer_lookup[user_id] = Streamer(user)
+
+        # for each streamer, either add it to the streamers collection for first time or update the existing entry
+        for streamer_id, streamer in streamer_lookup.items():
+
+            # case: streamer hasn't been seen before by IndieOutreach's scraping
+            # -> we need to scrape all the videos for this streamer
+            if (streamers.get(streamer_id) == False):
+
+                videos = get_all_videos_for_streamer(twitchAPI, streamer_id)
+                sys.exit()
+
+            # case: streamer has been seen before
+            # -> all videos have already been accounted for, we only need to update the streamer
+            else:
+                print('woah')
+
+
+def get_all_videos_for_streamer(twitchAPI, streamer_id):
+    all_videos = []
+    videos, cursor = twitchAPI.get_videos(streamer_id)
+    while (len(videos) > 0):
+        for video in videos:
+            print(video)
+        videos, cursor = twitchAPI.get_videos(streamer_id, cursor)
+    return all_videos
+
+# takes in a list of items l
+# returns a list of n batch_sized lists with items distributed into batches
+# ex: given l=[1, 2, 3, 4, 5] and batch_size=2
+#    -> [ [1, 2], [3, 4], [5] ]
+def create_batches(l, batch_size):
+    new_list = []
+    new_list_i, batch_i = 0, 0
+    new_list.append([])
+    for item in l:
+        if (batch_i >= batch_size):
+            new_list.append([item])
+            batch_i = 0
+            new_list_i += 1
+        else:
+            new_list[new_list_i].append(item)
+            batch_i += 1
+    return new_list
+
+# Main -------------------------------------------------------------------------
 
 # Run the main scraper
 def run():
@@ -285,7 +381,7 @@ def run():
 
 
     if (("-s" in sys.argv) or ("--streamers" in sys.argv)):
-        streamers = scrape_streamers(credentials['twitch'])
+        streamers = scrape_streamers(credentials['twitch'], 500)
 
 # Run --------------------------------------------------------------------------
 

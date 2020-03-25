@@ -44,8 +44,8 @@ Contains the Stream(), Streamer(), and Streamers() classes
 #### credentials.py
 credentials.py holds API credentials for both Twitch and IGDB
 Format:
- -  `{"twitch": {"client_id": "YOUR_APPS_CLIENT_ID", "client_secret": "YOUR_APPS_CLIENT_SECRET"}, "igdb": "YOUR_IGDB_USER_KEY"}`
-
+ -  `{"twitch": {"client_id": "YOUR_APPS_CLIENT_ID", "client_secret": "YOUR_APPS_CLIENT_SECRET", "v5_client_id": "A_CLIENT_ID_FOR_V5_API"}, "igdb": "YOUR_IGDB_USER_KEY"}`
+  - Note: the v5 API has been deprecated, so it may not be possible to get a new key that works for v5_client_id
 
 #### /data
 Folder contains all the .csv files that scraper compiles
@@ -130,10 +130,10 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
-- Update TwitchAPI's sleep function to take Twitch's ratelimit into account
+- TwitchAPI.get_videos() now calls TwitchAPI.get_game_name_in_video() in order to use the deprecated v5 Twitch API (kraken) to get game info about streamer's videos because the new Twitch API (helix) does not support the retrieval of this information.
 
 #### What is still in development? Known Issues?
- - scrape_streamers() only scrapes livestreams right now -> it does not make any calls for videos/streamers
+ - scrape_streamers() can now scrape videos for streamers, but it does not take that info and add it to the Streamer objects yet
 
 #### What's next?
  - Function for scraping all livestreams on Twitch  
