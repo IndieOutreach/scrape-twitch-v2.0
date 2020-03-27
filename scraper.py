@@ -39,7 +39,7 @@ class TwitchAPI():
 
         # create headers for the deprecated v5 API
         self.v5API_headers = {'Client-ID': twitch_credentials['v5_client_id'], 'Accept': 'application/vnd.twitchtv.v5+json'}
-
+        self.min_sleep_period = 1 / (800 / 60) # API has 800 requests per minute
 
 
 
@@ -58,9 +58,12 @@ class TwitchAPI():
     # the http header for responses from the Twitch API include the number of requests left before we reach our ratelimit
     # Twitch allows 800 requests per minute = ~13 requests per second
     # -> to be safe, when we run out wait an entire second
-    def __sleep(self, header):
-        if (('ratelimit_remaining' in header) and (header['ragelimit_remaining'] == 0)):
+    def __sleep(self, header, min_sleep = 0):
+        if (('ratelimit_remaining' in header) and (header['ratelimit_remaining'] == 0)):
+            print('sleeping...', header['ratelimit_remaining'])
             time.sleep(1)
+        elif (min_sleep > 0):
+            time.sleep(min_sleep)
 
 
     # returns a tuple ([list of livestreams], pagination_cursor)
@@ -88,7 +91,9 @@ class TwitchAPI():
         r = requests.get('https://api.twitch.tv/helix/users', params=params, headers=self.headers)
         if (r.status_code == 200):
             data = r.json()
-            streamers = data['data']
+            for streamer in data['data']:
+                streamer['num_followers'] = self.get_followers(streamer['id'])
+                streamers.append(streamer)
 
         self.__sleep(r.headers)
         return streamers
@@ -116,6 +121,7 @@ class TwitchAPI():
 
     # returns the string name of a game played in a specified video
     # -> this uses the deprecated V5 API because the New API doesn't have this functionality
+    # src: https://dev.twitch.tv/docs/v5/reference/videos#get-video
     def get_game_name_in_video(self, video_id):
         game = ""
         video_id = str(video_id) if (isinstance(video_id, int)) else video_id
@@ -124,6 +130,10 @@ class TwitchAPI():
         if (r.status_code == 200):
             data = r.json()
             game = data['game']
+        else:
+            self.sleep(r.headers, 2)
+            return self.get_game_name_in_video(self, video_id)
+
         self.__sleep(r.headers)
         return game
 
@@ -280,69 +290,70 @@ def compile_games_db(igdb_credentials, limit = 9999999):
 
 # scrapes all current livestreams on twitch and compiles them into a collection of Streamers
 # -> loads pre-existing streamers from /data/streamers.csv
-def scrape_streamers(twitch_credentials, limit = 9999999):
+def scrape_streamers(twitch_credentials, livestreams_limit = 9999999, videos_limit = 9999999):
 
     twitchAPI = TwitchAPI(twitch_credentials)
-
     streamers = Streamers() # <- LOAD STREAMERS FROM CSV FILE
-    streams = []
-
-    # get all livestreams currently on Twitch
-    print("1. Scraping Livestreams...")
-    livestreams, cursor = twitchAPI.get_livestreams()
-    while ((len(livestreams) > 0) and (len(streams) < limit)):
-        for livestream in livestreams:
-            streams.append(Stream(livestream))
-        print("livestreams: ", len(streams))
-        livestreams, cursor = twitchAPI.get_livestreams(cursor)
+    streams = get_all_livestreams(twitchAPI, livestreams_limit)
 
     # loop over livestreams to access streamers
     # -> we can look up streamer profiles in bulk (batches of 100 IDs)
     #    so we want to break our livestreams into batches
-    print("2. loop over streamers")
-    batches_of_streams = create_batches(streams, 100)
-    for batch in batches_of_streams:
+    for batch in create_batches(streams, 100):
 
         # get a list of all streamer_ids for this batch
         streamer_ids = []
-        languages = {}
-        created_at = {}
+        stream_lookup = {}
         for stream in batch:
             streamer_ids.append(stream.user_id)
-            languages[stream.user_id] = stream.language
-            created_at[stream.user_id] = stream.date # <- if this value is same as saved streamer value, we can ignore this streamer
+            stream_lookup[stream.user_id] = stream
 
         # search for streamer objects and create a lookup table {streamer_id -> streamer object}
-        streamer_lookup = {}
+        # -> These have updated values, so we'll do our stream analysis on these and then call Streamers.update()
         for user in twitchAPI.get_streamers(streamer_ids):
             user_id = user['id']
-            user['num_followers']    = twitchAPI.get_followers(user_id)
-            user['language']         = languages[user_id]
-            user['last_updated']     = created_at[user_id]
-            streamer_lookup[user_id] = Streamer(user)
+            stream = stream_lookup[user_id]
+            user['language'] = stream.language
 
-        # for each streamer, either add it to the streamers collection for first time or update the existing entry
-        for streamer_id, streamer in streamer_lookup.items():
+            # compile all livestreams/videos that the scraper hasn't already seen
+            streamer_videos = [ stream_lookup[user_id] ]
+            if (streamers.get(user_id) == False):
+                print("scraping videos for streamer_id =", user_id)
+                if (streamers.get(user_id) == False):
+                    for video in get_all_videos_for_streamer(twitchAPI, user_id, videos_limit):
+                        if (video.game_name != ""):
+                            streamer_videos.append(video)
+            print("# videos = ", len(streamer_videos))
 
-            # case: streamer hasn't been seen before by IndieOutreach's scraping
-            # -> we need to scrape all the videos for this streamer
-            if (streamers.get(streamer_id) == False):
-
-                videos = get_all_videos_for_streamer(twitchAPI, streamer_id)
-                sys.exit()
-
-            # case: streamer has been seen before
-            # -> all videos have already been accounted for, we only need to update the streamer
-            else:
-                print('woah')
+            # add or update the streamer object w/ new profile info from twitch + stream data
+            streamers.add_or_update_streamer(user)
+            for stream in streamer_videos:
+                streamers.add_stream_data(stream)
 
 
-def get_all_videos_for_streamer(twitchAPI, streamer_id):
+    return streamers
+
+
+# returns all livestreams up to a limit
+def get_all_livestreams(twitchAPI, limit = 9999999):
+    print('\nScraping livestreams...')
+    streams = []
+    livestreams, cursor = twitchAPI.get_livestreams()
+    while ((len(livestreams) > 0) and (len(streams) < limit)):
+        for livestream in livestreams:
+            if (len(streams) < limit):
+                streams.append(Stream(livestream))
+        print("livestreams: ", len(streams))
+        livestreams, cursor = twitchAPI.get_livestreams(cursor)
+    return streams
+
+
+def get_all_videos_for_streamer(twitchAPI, streamer_id, limit = 9999999):
     all_videos = []
     videos, cursor = twitchAPI.get_videos(streamer_id)
-    while (len(videos) > 0):
+    while ((len(videos) > 0) and (len(all_videos) < limit)):
         for video in videos:
-            print(video)
+            all_videos.append(Stream(video, False))
         videos, cursor = twitchAPI.get_videos(streamer_id, cursor)
     return all_videos
 
@@ -381,7 +392,7 @@ def run():
 
 
     if (("-s" in sys.argv) or ("--streamers" in sys.argv)):
-        streamers = scrape_streamers(credentials['twitch'], 500)
+        streamers = scrape_streamers(credentials['twitch'], 20)
 
 # Run --------------------------------------------------------------------------
 

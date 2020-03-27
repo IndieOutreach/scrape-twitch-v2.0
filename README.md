@@ -130,18 +130,17 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
-- TwitchAPI.get_videos() now calls TwitchAPI.get_game_name_in_video() in order to use the deprecated v5 Twitch API (kraken) to get game info about streamer's videos because the new Twitch API (helix) does not support the retrieval of this information.
+- scrape_streamers() can now add info from videos/livestreams to Streamer objects
+- TwitchAPI.get_streamers() now automatically calls .get_followers() on every streamer object before returning them
 
 #### What is still in development? Known Issues?
- - scrape_streamers() can now scrape videos for streamers, but it does not take that info and add it to the Streamer objects yet
+ - scrape_streamers() does not export/load from CSV files
+ - searching for game names over the Twitch V5 API is slow. This seems unavoidable
 
 #### What's next?
- - Function for scraping all livestreams on Twitch  
- - Add "streamer", "stream" classes
+ - Add functionality to Streamers class so it can export/load from CSV
 
 #### Future Roadmap
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)
  - Compile the [keyword, genre, theme, platform] alias tables for IGDB
- - Scraping Algorithm
- - export to CSV
- - load from CSV
+ - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has

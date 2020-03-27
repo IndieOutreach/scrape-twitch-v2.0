@@ -24,7 +24,7 @@ def test_twitch_api(clientID):
     test_names = [
         'games0', 'games1', 'games2', 'games3',
         'streamers0', 'streamers1', 'streamers2', 'streamers3',
-        'followers0', 'followers1',
+        'followers0', 'followers1', 'followers2',
         'livestreams0', 'livestreams1', 'livestreams2',
         'videos0', 'videos1', 'videos2', 'videos3', 'videos4'
     ]
@@ -77,18 +77,22 @@ def test_twitch_api(clientID):
     if (len(streamers) != 0):
         tests['streamers3'] = False
 
-    # followers test 1: -> input a valid streamer
+    # followers test 0: -> input a valid streamer
     followers = twitchAPI.get_followers(streamer_ids[0])
     if (followers <= 0):
-        tets['followers1'] = False
+        tets['followers0'] = False
 
-    # followers test 2: -> input an invalid streamer
+    # followers test 1: -> input an invalid streamer
     # note: for some reason, the Twitch API allows you to call negative streamer IDs
     #       and returns 0 (returns 24 if -1). This is weird behavior
     followers = twitchAPI.get_followers("sdflkdsf")
     if (followers >= 0):
-        tests['followers2'] = False
+        tests['followers1'] = False
 
+    # followers test 2: -> make sure that calling .get_streamers() includes follower count
+    streamers = twitchAPI.get_streamers(streamer_ids)
+    if ((len(streamers) < 0) or ('num_followers' not in streamers[0]) or (streamers[0]['num_followers'] <= 0)):
+        tests['followers2'] = False
 
     # livestreams test 0: -> no parameters (should get the top livestreams on Twitch right now)
     livestreams, cursor = twitchAPI.get_livestreams()
@@ -333,23 +337,64 @@ def validate_igdb_array(game_obj, list_name):
 # Test Scrape Streamers
 # ==============================================================================
 
-
+# Unfortunately, scraping streamers is a very time intensive process because it involves scraping videos
+# therefore, these tests utilize small number of streamers
 def test_scrape_streamers(twitch_credentials, igdb_credentials):
-
-    #scraper.scrape_streamers(twitch_credentials)
-    return
-
-    twitchAPI = TwitchAPI(twitch_credentials)
-    igdbAPI = IGDBAPI(igdb_credentials)
 
     test_names = [
         'compile0'
     ]
     tests = get_empty_test(test_names)
 
+    # compile test 0: -> make sure scraped streamers have games data
+    streamers = scraper.scrape_streamers(twitch_credentials, 5, 50)
+    streamer_ids = streamers.get_streamer_ids()
+    if (len(streamer_ids) == 0):
+        tests['compile0'] = False
+    else:
+        streamer = streamers.get(streamer_ids[0])
+        if (not validate_streamer(streamer)):
+            tests['compile0'] = False
 
 
     print_test_results("Scrape Streamers", tests)
+
+
+# returns true if streamer has all the right attributes to have been scraped correctly
+# -> checks format of Streamer class object
+def validate_streamer(streamer):
+    if (streamer == False):
+        return False
+
+    streamer = streamer.to_dict()
+    if (
+        (streamer['id'] <= 0)                                                 or
+        (len(streamer['display_name']) <= 0)                                  or
+        ('https://static-cdn.jtvnw.net' not in streamer['profile_image_url']) or
+        (streamer['total_views'] <= 0)                                        or
+        (streamer['num_followers'] <= 0)                                      or
+        (streamer['language'] == '')                                          or
+        (not validate_stream_history(streamer['stream_history']))             or
+        (streamer['last_updated'] == 0)
+        ):
+        return False
+    return True
+
+# makes sure that stream history is correctly formatted and streamer has some views
+def validate_stream_history(stream_history):
+    for game_key in stream_history:
+        game = stream_history[game_key]
+        if (
+            (('times_played' not in game) or (game['times_played'] <= 0))             or
+            (('num_views' not in game) or (not isinstance(game['num_views'], int)))   or
+            (('num_videos' not in game) or (not isinstance(game['num_videos'], int))) or
+            (('dates' not in game) or (len(game['dates']) <= 0))                     or
+            (len(game['dates']) != game['times_played'])
+            ):
+            return False
+    return True
+
+
 
 # ==============================================================================
 # Main Functions
@@ -374,6 +419,7 @@ def print_test_results(title, tests):
 
     print("-")
     print("Results: ", correct, "/", n, "(", round(correct / n * 100, 1), "%) correct")
+    print("------------------------------")
     print("")
 
 # given a list of names of tests, returns a dict with all {test_name: True}
