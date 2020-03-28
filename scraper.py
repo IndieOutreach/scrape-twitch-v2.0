@@ -77,7 +77,8 @@ class TwitchAPI():
         if (r.status_code == 200):
             data = r.json()
             livestreams = data['data']
-            cursor = data['pagination']['cursor']
+            if (('cursor' in data['pagination']) and (data['pagination']['cursor'] != '')):
+                cursor = data['pagination']['cursor']
 
         self.__sleep(r.headers)
         return livestreams, cursor
@@ -93,7 +94,13 @@ class TwitchAPI():
             data = r.json()
             for streamer in data['data']:
                 streamer['num_followers'] = self.get_followers(streamer['id'])
+                streamer['id'] = int(streamer['id'])
                 streamers.append(streamer)
+        else:
+            print("------------\nERROR")
+            print(r.status_code)
+            print(r.text)
+            print("--------------")
 
         self.__sleep(r.headers)
         return streamers
@@ -216,7 +223,7 @@ class IGDBAPI():
                 game_covers[game_id] = cover
 
             for game in r.json():
-                game_id = game['id']
+                game_id = int(game['id'])
                 game['igdb_box_art_url'] = game_covers[game_id] if (game_id in game_covers) else ""
                 games.append(game)
 
@@ -237,7 +244,7 @@ class IGDBAPI():
 
             # bucket covers by game ID so we can compare sizes and keep the max
             for cover in r.json():
-                game_id = cover['game']
+                game_id = int(cover['game'])
 
                 if (('width' in cover) and ('height' in cover)):
                     cover_size = cover['width'] * cover['height']
@@ -290,7 +297,7 @@ def compile_games_db(igdb_credentials, limit = 9999999):
 
 # scrapes all current livestreams on twitch and compiles them into a collection of Streamers
 # -> loads pre-existing streamers from /data/streamers.csv
-def scrape_streamers(twitch_credentials, livestreams_limit = 9999999, videos_limit = 9999999):
+def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos_limit = 9999999):
 
     twitchAPI = TwitchAPI(twitch_credentials)
     streamers = Streamers() # <- LOAD STREAMERS FROM CSV FILE
@@ -299,7 +306,11 @@ def scrape_streamers(twitch_credentials, livestreams_limit = 9999999, videos_lim
     # loop over livestreams to access streamers
     # -> we can look up streamer profiles in bulk (batches of 100 IDs)
     #    so we want to break our livestreams into batches
+    batch_num = 0
     for batch in create_batches(streams, 100):
+
+        print("BATCH ", batch_num)
+        batch_num += 1
 
         # get a list of all streamer_ids for this batch
         streamer_ids = []
@@ -335,15 +346,25 @@ def scrape_streamers(twitch_credentials, livestreams_limit = 9999999, videos_lim
 
 
 # returns all livestreams up to a limit
+# -> uses a lookup table of already observed livestream IDs to make sure we know when to end
 def get_all_livestreams(twitchAPI, limit = 9999999):
+
     print('\nScraping livestreams...')
     streams = []
     livestreams, cursor = twitchAPI.get_livestreams()
-    while ((len(livestreams) > 0) and (len(streams) < limit)):
+    livestream_ids = {}
+    old_num_livestreams = -1
+    while ((len(livestreams) > 0) and (len(streams) < limit) and (cursor != False) and (old_num_livestreams != len(livestream_ids))):
+        old_num_livestreams = len(livestream_ids)
+
         for livestream in livestreams:
             if (len(streams) < limit):
-                streams.append(Stream(livestream))
-        print("livestreams: ", len(streams))
+                stream = Stream(livestream)
+                if (stream.id not in livestream_ids):
+                    streams.append(stream)
+                    livestream_ids[stream.id] = 1
+
+        print("livestreams: ", len(livestream_ids))
         livestreams, cursor = twitchAPI.get_livestreams(cursor)
     return streams
 
@@ -363,17 +384,16 @@ def get_all_videos_for_streamer(twitchAPI, streamer_id, limit = 9999999):
 #    -> [ [1, 2], [3, 4], [5] ]
 def create_batches(l, batch_size):
     new_list = []
-    new_list_i, batch_i = 0, 0
+    i = 0
     new_list.append([])
     for item in l:
-        if (batch_i >= batch_size):
-            new_list.append([item])
-            batch_i = 0
-            new_list_i += 1
+        if (len(new_list[i]) >= batch_size):
+            new_list.append([])
+            i += 1
         else:
-            new_list[new_list_i].append(item)
-            batch_i += 1
+            new_list[i].append(item)
     return new_list
+
 
 # Main -------------------------------------------------------------------------
 
@@ -392,7 +412,8 @@ def run():
 
 
     if (("-s" in sys.argv) or ("--streamers" in sys.argv)):
-        streamers = scrape_streamers(credentials['twitch'], 20)
+        streamers = compile_streamers_db(credentials['twitch'])
+        streamers.export_to_csv('./data/streamers.csv')
 
 # Run --------------------------------------------------------------------------
 

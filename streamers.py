@@ -32,8 +32,8 @@ class Stream():
         epoch = int(datetime.datetime.strptime(day, '%Y-%m-%d').timestamp())
 
         self.id             = int(twitch_obj['id'])
-        self.user_id        = twitch_obj['user_id']
-        self.twitch_game_id = twitch_obj['game_id'] if ('game_id' in twitch_obj) else 0
+        self.user_id        = int(twitch_obj['user_id'])
+        self.twitch_game_id = int(twitch_obj['game_id']) if ('game_id' in twitch_obj and twitch_obj['game_id'] != '') else 0
         self.game_name      = twitch_obj['game_name'] if ('game_name' in twitch_obj) else ""
         self.language       = twitch_obj['language']
         self.date           = epoch
@@ -59,7 +59,15 @@ class Streamer():
 
     def __init__(self, streamer_obj, from_csv = False):
         if (from_csv):
-            self.id = ""
+            self.id = int(streamer_obj['id'])
+            self.display_name = streamer_obj['display_name']
+            self.profile_image_url = streamer_obj['profile_image_url']
+            self.total_views = int(streamer_obj['total_views'])
+            self.description = streamer_obj['description']
+            self.num_followers = int(streamer_obj['num_followers'])
+            self.language = streamer_obj['language']
+            self.stream_history = self.__load_stream_history(streamer_obj['stream_history'])
+            self.last_updated = int(streamer_obj['last_updated'])
 
         else:
             self.id                = int(streamer_obj['id'])
@@ -72,6 +80,24 @@ class Streamer():
             self.stream_history    = {} # will have format {twitch_game_id: num_times_played}
             self.last_updated      = streamer_obj['last_updated'] if ('last_updated' in streamer_obj) else 0
 
+
+    # stream history, when JSONified, converts all game_ids into strings, even the ints
+    # -> we need to re-intify those game_ids
+    def __load_stream_history(self, obj):
+        stream_history = {}
+        obj = json.loads(obj)
+        for key, value in obj.items():
+            if (self.__check_if_str_is_int(key)):
+                key = int(key)
+            stream_history[key] = value
+        return stream_history
+
+    def __check_if_str_is_int(self, str):
+        try:
+            val = int(str)
+            return True
+        except ValueError:
+            return False
 
     # updates profile information w/ new info from Twitch
     def update(self, twitch_obj):
@@ -101,14 +127,12 @@ class Streamer():
 
 
         if (game_key in self.stream_history):
-            self.stream_history[game_key]['times_played'] += 1
             self.stream_history[game_key]['num_videos'] += videos_contributed
             self.stream_history[game_key]['num_views'] += views_contributed
             self.stream_history[game_key]['dates'].append(stream.date)
 
         else:
             self.stream_history[game_key] = {
-                'times_played': 1,
                 'num_views': views_contributed,
                 'num_videos': videos_contributed,
                 'dates': [stream.date]
@@ -129,6 +153,10 @@ class Streamer():
         }
         return obj
 
+    def to_exportable_dict(self):
+        obj = self.to_dict()
+        obj['stream_history'] = json.dumps(obj['stream_history'])
+        return obj
 
 # ==============================================================================
 # Streamers
@@ -137,8 +165,10 @@ class Streamer():
 
 class Streamers():
 
-    def __init__(self, filepath = False):
+    def __init__(self, filename = False):
         self.streamers = {}
+        if (filename):
+            self.load_from_csv(filename)
 
     # get ----------------------------------------------------------------------
 
@@ -157,6 +187,7 @@ class Streamers():
     # inserts a new streamer into the collection
     def add_or_update_streamer(self, twitch_obj):
         streamer_id = twitch_obj['user_id'] if ('user_id' in twitch_obj) else twitch_obj['id']
+        streamer_id = int(streamer_id) if (not isinstance(streamer_id, int)) else streamer_id
         if (streamer_id not in self.streamers):
             self.streamers[streamer_id] = Streamer(twitch_obj)
         else:
@@ -166,3 +197,79 @@ class Streamers():
     def add_stream_data(self, stream):
         if (stream.user_id in self.streamers):
             self.streamers[stream.user_id].add_stream_data(stream)
+
+    # File I/O -----------------------------------------------------------------
+
+    def export_to_csv(self, filename):
+        fieldnames = [
+            'id', 'display_name', 'profile_image_url', 'total_views', 'description',
+            'num_followers', 'language', 'stream_history', 'last_updated'
+        ]
+        filename = filename if ('.csv' in filename) else filename + '.csv'
+        with open(filename, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for streamer_id, streamer in self.streamers.items():
+                writer.writerow(streamer.to_exportable_dict())
+
+    def load_from_csv(self, filename):
+        filename = filename if ('.csv' in filename) else filename + '.csv'
+        with open(filename) as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                streamer = Streamer(row, True)
+                self.streamers[streamer.id] = streamer
+
+
+    # Data Validation ----------------------------------------------------------
+
+    # compares this Streamers object with another Streamers object
+    # returns True if they point at the exact same streamers
+    def check_if_streamer_collection_same(self, streamers2):
+
+        # case 0: there are an uneven number of streamers in each collection
+        if (len(self.streamers) != len(streamers2.streamers)):
+            return False
+
+        for streamer_id in self.streamers:
+
+            streamer1 = self.get(streamer_id)
+            streamer2 = streamers2.get(streamer_id)
+
+            # case 1: 1 collection has a specified streamer but the other doesn't
+            if ((streamer1 == False) or (streamer2 == False)):
+                return False
+
+            obj1 = streamer1.to_dict()
+            obj2 = streamer2.to_dict()
+
+            # case 2: the collection's Streamer objects hav ea different number of parameters
+            if (len(obj1) != len(obj2)):
+                return False
+
+            for key in obj1:
+                val1 = obj1[key]
+                if (key not in obj2): # case 3: one Game has a parameter that the other lacks
+                    return False
+                val2 = obj2[key]
+
+                if (type(val1) != type(val2)): # case 4: the type of parameters aren't the same between Streamers
+                    return False
+
+                if (isinstance(val1, dict)): # <- this will be the 'stream_history' parameter
+                    for k in val1:
+                        if (k not in val2):
+                            print(val1)
+                            print(val2)
+                            return False
+
+                        if (type(val1[k]) != type(val2[k])):
+                            return False
+                        if (val1[k] != val2[k]):
+                            return False
+                else:
+                    if (val1 != val2): # case 6: the values of parameters are different between the two Streamers
+                        return False
+
+        print('checkpoint J')
+        return True

@@ -130,15 +130,19 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
-- scrape_streamers() can now add info from videos/livestreams to Streamer objects
-- TwitchAPI.get_streamers() now automatically calls .get_followers() on every streamer object before returning them
+- scraper.scrape_streamers() can now save streamers to CSV files
+- fix scraper.create_batches() to return batches of size 100 instead of 101 (which breaks the Twitch API)
+- change name of scraper.scrape_streamers() to scraper.compile_streamers_db()
 
 #### What is still in development? Known Issues?
- - scrape_streamers() does not export/load from CSV files
- - searching for game names over the Twitch V5 API is slow. This seems unavoidable
+ - streamer profiles don't have a URL parameter for accessing their Twitch page
+ - write a test to make sure that scrape_all_livestreams() terminates
+ - scraper.compile_streamers_db() takes forever to run because searching for videos is such a costly operation
 
 #### What's next?
- - Add functionality to Streamers class so it can export/load from CSV
+ - add a logs system to TwitchAPI and IGDBAPI so they can record statistics about api endpoint usage
+ - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
+
 
 #### Future Roadmap
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)

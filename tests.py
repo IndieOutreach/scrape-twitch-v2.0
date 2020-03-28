@@ -58,7 +58,7 @@ def test_twitch_api(clientID):
 
     # streamers test 0: -> an individual streamer with a valid ID
     streamers = twitchAPI.get_streamers(streamer_ids[0])
-    if (streamers[0]['id'] != streamer_ids[0]):
+    if (streamers[0]['id'] != int(streamer_ids[0])):
         tests['streamers0'] = False
 
     # streamers test 1: -> an individual streamer with an invalid ID
@@ -278,12 +278,12 @@ def test_complile_games_db(clientID):
 
 
     # load test 0: -> save data to .CSV, load it back into memory, and check if its the same
-    games.export_to_csv('./test_csv_output/games.csv')
-    new_games = Games('./test_csv_output/games.csv')
+    games.export_to_csv('./test/games.csv')
+    new_games = Games('./test/games.csv')
     if (not games.check_if_game_collections_same(new_games)):
-        tests['data0'] = False
+        tests['load0'] = False
     elif (not validate_game(games.get(740), 740, "Halo: Combat Evolved")):
-        tests['data0'] = False
+        tests['load0'] = False
 
 
     print_test_results("Compile Games DB", tests)
@@ -342,20 +342,31 @@ def validate_igdb_array(game_obj, list_name):
 def test_scrape_streamers(twitch_credentials, igdb_credentials):
 
     test_names = [
-        'compile0'
+        'compile0',
+        'load0'
     ]
     tests = get_empty_test(test_names)
 
     # compile test 0: -> make sure scraped streamers have games data
-    streamers = scraper.scrape_streamers(twitch_credentials, 5, 50)
+    streamers = scraper.compile_streamers_db(twitch_credentials, 5, 50)
     streamer_ids = streamers.get_streamer_ids()
     if (len(streamer_ids) == 0):
         tests['compile0'] = False
     else:
         streamer = streamers.get(streamer_ids[0])
-        if (not validate_streamer(streamer)):
+        if (streamer == False):
+            tests['compile0'] = False
+        elif (streamer.stream_history == {}):
+            tests['compile0'] = False
+        elif (not validate_streamer(streamer)):
             tests['compile0'] = False
 
+
+    # load 0: -> save the streamers to a CSV file and re-load it to make sure saving/loading works
+    streamers.export_to_csv('./test/streamers.csv')
+    new_streamers = Streamers('./test/streamers.csv')
+    if (not streamers.check_if_streamer_collection_same(new_streamers)):
+        tests['load0'] = False
 
     print_test_results("Scrape Streamers", tests)
 
@@ -385,11 +396,9 @@ def validate_stream_history(stream_history):
     for game_key in stream_history:
         game = stream_history[game_key]
         if (
-            (('times_played' not in game) or (game['times_played'] <= 0))             or
             (('num_views' not in game) or (not isinstance(game['num_views'], int)))   or
             (('num_videos' not in game) or (not isinstance(game['num_videos'], int))) or
-            (('dates' not in game) or (len(game['dates']) <= 0))                     or
-            (len(game['dates']) != game['times_played'])
+            (('dates' not in game) or (len(game['dates']) <= 0))
             ):
             return False
     return True
@@ -450,7 +459,7 @@ def main():
         test_igdb_api(credentials['igdb'])
     if ((len(testing) == 0) or ("Compile Games DB" in testing)):
         test_complile_games_db(credentials['igdb'])
-    if ((len(testing) == 0) or ("Scrape Streamers" in testing)):
+    if ((len(testing) == 0) or ("Compile Streamers DB" in testing)):
         test_scrape_streamers(credentials['twitch'], credentials['igdb'])
 
 
