@@ -298,6 +298,7 @@ def compile_games_db(igdb_credentials, limit = 9999999):
 # Scrape Streamers -------------------------------------------------------------
 
 # scrapes all current livestreams on twitch and compiles them into a collection of Streamers
+# -> does NOT add video data to streamers because of runtime concerns
 # -> loads pre-existing streamers from /data/streamers.csv
 def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos_limit = 9999999):
 
@@ -327,24 +328,30 @@ def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos
             user_id = user['id']
             stream = stream_lookup[user_id]
             user['language'] = stream.language
-
-            # compile all livestreams/videos that the scraper hasn't already seen
-            streamer_videos = [ stream_lookup[user_id] ]
-            if (streamers.get(user_id) == False):
-                print("scraping videos for streamer_id =", user_id)
-                if (streamers.get(user_id) == False):
-                    for video in get_all_videos_for_streamer(twitchAPI, user_id, videos_limit):
-                        if (video.game_name != ""):
-                            streamer_videos.append(video)
-            print("# videos = ", len(streamer_videos))
-
-            # add or update the streamer object w/ new profile info from twitch + stream data
             streamers.add_or_update_streamer(user)
-            for stream in streamer_videos:
-                streamers.add_stream_data(stream)
-
+            streamers.add_stream_data(stream_lookup[user_id])
 
     return streamers
+
+# .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
+# -> this function opens up the streamers DB and adds video data for streamers who are missing it
+# -> user can specify the number of streamers that get videos added in this execution
+def add_videos_to_streamers_db(twitch_credentials, filepath = './data/streamers.csv'):
+
+    print(".add_videos_to_streamers_db() is a WIP")
+    return
+
+    twitchAPI = TwitchAPI(twitch_credentials)
+    streamers = Streamers(filepath)
+
+    # CODE FOR SCRAPING VIDEOS
+    #if (streamers.get(user_id) == False):
+    #    print("scraping videos for streamer_id =", user_id)
+    #    if (streamers.get(user_id) == False):
+    #        for video in get_all_videos_for_streamer(twitchAPI, user_id, videos_limit):
+    #            if (video.game_name != ""):
+    #                streamer_videos.append(video)
+
 
 
 # returns all livestreams up to a limit

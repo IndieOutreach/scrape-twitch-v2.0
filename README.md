@@ -130,14 +130,12 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
-- Add test to ensure .get_all_livestreams() terminates properly
+- Remove searching for video data from .compile_streamers_db()
 
 #### What is still in development? Known Issues?
+ - Add scraper.add_videos_to_streamers_db() 
  - streamer profiles don't have a URL parameter for accessing their Twitch page
- - write a test to make sure that scrape_all_livestreams() terminates
- - scraper.compile_streamers_db() takes forever to run because searching for videos is such a costly operation
-  - break this function into .compile_streamers_db() and .add_videos_to_streamers() to alleviate immediate runtime concerns
-  - allow user to specify the number of streamers to add videos for so they can add game data in batches instead of all or nothing
+
 
 #### What's next?
  - add a logs system to TwitchAPI and IGDBAPI so they can record statistics about api endpoint usage
