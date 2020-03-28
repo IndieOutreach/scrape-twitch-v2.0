@@ -342,10 +342,17 @@ def validate_igdb_array(game_obj, list_name):
 def test_scrape_streamers(twitch_credentials, igdb_credentials):
 
     test_names = [
+        'twitch0',
         'compile0',
         'load0'
     ]
     tests = get_empty_test(test_names)
+
+    # twitch test 0: -> make sure that scraper.py can scrape all livestreams on Twitch
+    #  - make sure that the function executes properly (average number of concurrent livestreams is < 200k)
+    twitchAPI = TwitchAPI(twitch_credentials)
+    if (len(scraper.get_all_livestreams(twitchAPI)) > 250000):
+        tests['twitch0'] = False
 
     # compile test 0: -> make sure scraped streamers have games data
     streamers = scraper.compile_streamers_db(twitch_credentials, 5, 50)

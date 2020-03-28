@@ -22,7 +22,7 @@ from streamers import *
 
 class TwitchAPI():
 
-    def __init__(self, twitch_credentials):
+    def __init__(self, twitch_credentials, print_errors = False):
 
         # Twitch uses OAuth2, so we need to grab an access_token
         params = {
@@ -40,7 +40,7 @@ class TwitchAPI():
         # create headers for the deprecated v5 API
         self.v5API_headers = {'Client-ID': twitch_credentials['v5_client_id'], 'Accept': 'application/vnd.twitchtv.v5+json'}
         self.min_sleep_period = 1 / (800 / 60) # API has 800 requests per minute
-
+        self.print_errors = print_errors
 
 
     # takes in a list of items and converts it into a list of tuples
@@ -97,10 +97,12 @@ class TwitchAPI():
                 streamer['id'] = int(streamer['id'])
                 streamers.append(streamer)
         else:
-            print("------------\nERROR")
-            print(r.status_code)
-            print(r.text)
-            print("--------------")
+            if (self.print_errors):
+                print("------------\nERROR in TwitchAPi.get_livestreams()")
+                print(r.status_code)
+                print(r.text)
+                print(streamer_ids)
+                print("--------------")
 
         self.__sleep(r.headers)
         return streamers

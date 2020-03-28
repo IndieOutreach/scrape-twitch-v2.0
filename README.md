@@ -130,14 +130,14 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
-- scraper.scrape_streamers() can now save streamers to CSV files
-- fix scraper.create_batches() to return batches of size 100 instead of 101 (which breaks the Twitch API)
-- change name of scraper.scrape_streamers() to scraper.compile_streamers_db()
+- Add test to ensure .get_all_livestreams() terminates properly
 
 #### What is still in development? Known Issues?
  - streamer profiles don't have a URL parameter for accessing their Twitch page
  - write a test to make sure that scrape_all_livestreams() terminates
  - scraper.compile_streamers_db() takes forever to run because searching for videos is such a costly operation
+  - break this function into .compile_streamers_db() and .add_videos_to_streamers() to alleviate immediate runtime concerns
+  - allow user to specify the number of streamers to add videos for so they can add game data in batches instead of all or nothing
 
 #### What's next?
  - add a logs system to TwitchAPI and IGDBAPI so they can record statistics about api endpoint usage

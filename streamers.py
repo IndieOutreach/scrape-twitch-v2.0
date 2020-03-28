@@ -271,5 +271,4 @@ class Streamers():
                     if (val1 != val2): # case 6: the values of parameters are different between the two Streamers
                         return False
 
-        print('checkpoint J')
         return True
