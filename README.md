@@ -130,15 +130,15 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
-- Remove searching for video data from .compile_streamers_db()
+- Add TimeLogs to keep track of how long each request takes in TwitchAPI and IGDBAPI
 
 #### What is still in development? Known Issues?
- - Add scraper.add_videos_to_streamers_db() 
+ - Add scraper.add_videos_to_streamers_db()
+ - decouple getting follower counts from .compile_streamers_db() due to runtime issues
  - streamer profiles don't have a URL parameter for accessing their Twitch page
 
 
 #### What's next?
- - add a logs system to TwitchAPI and IGDBAPI so they can record statistics about api endpoint usage
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 
 

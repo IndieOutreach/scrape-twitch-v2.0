@@ -411,6 +411,53 @@ def validate_stream_history(stream_history):
     return True
 
 
+# ==============================================================================
+# Test TimeLogs
+# ==============================================================================
+
+# test to see if timelogs work in TwitchAPI
+def test_timelogs(twitch_credentials):
+
+    test_names = [
+        'init0', 'init1',
+        'run0', 'run1', 'run2'
+    ]
+    tests = get_empty_test(test_names)
+
+    twitchAPI = TwitchAPI(twitch_credentials)
+
+    # initialize 0: -> make sure logs are initialized to be empty
+    for key, value in twitchAPI.request_logs.logs.items():
+        if (len(value) > 0):
+            tests['init0'] = False
+
+    # init 1: -> make sure action categories are correct
+    twitch_actions = ['get_livestreams', 'get_streamers', 'get_videos', 'get_game_name_in_video', 'get_followers', 'get_games']
+    for key in twitchAPI.request_logs.logs:
+        if (key not in twitch_actions):
+            tests['init1'] = False
+
+    # run 0: -> see if number of actions increases after executing
+    livestreams, cursor = twitchAPI.get_livestreams()
+    if (len(twitchAPI.request_logs.logs['get_livestreams']) == 0):
+        tests['run0'] = False
+
+    # run 1: -> see if running get_livestreams() again increases # of livestreams
+    times_run = len(twitchAPI.request_logs.logs['get_livestreams'])
+    livestreams, cursor = twitchAPI.get_livestreams(cursor)
+    livestreams, cursor = twitchAPI.get_livestreams(cursor)
+    if (len(twitchAPI.request_logs.logs['get_livestreams']) <= times_run):
+        print(twitchAPI.request_logs.logs)
+        tests['run1'] = False
+
+    # run 2: -> make sure that each action has an end time
+    for action in twitchAPI.request_logs.logs['get_livestreams']:
+        if (action['start'] > action['end']):
+            tests['run2'] = False
+
+    print_test_results("TimeLogs", tests)
+    twitchAPI.request_logs.print_stats()
+
 
 # ==============================================================================
 # Main Functions
@@ -468,6 +515,8 @@ def main():
         test_complile_games_db(credentials['igdb'])
     if ((len(testing) == 0) or ("Compile Streamers DB" in testing)):
         test_scrape_streamers(credentials['twitch'], credentials['igdb'])
+    if ((len(testing) == 0) or ("TimeLogs" in testing)):
+        test_timelogs(credentials['twitch'])
 
 
 # Run --------------------------------------------------------------------------

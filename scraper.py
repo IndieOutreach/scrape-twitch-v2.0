@@ -11,10 +11,111 @@
 import sys
 import json
 import time
+import math
 import requests
 
 from games import *
 from streamers import *
+
+# ==============================================================================
+# TimeLogs
+# ==============================================================================
+
+# class is used to record timing and number of different actions (ie: API requests)
+# - It is imported by TwitchAPI
+# NOTE: all times are in milliseconds
+class TimeLogs():
+
+    def __init__(self, action_categories):
+        self.logs = {} # { request_name: [ {request_obj}, ... ] }
+        for type in action_categories:
+            self.logs[type] = []
+        self.time_initialized = self.__get_current_time()
+
+
+    # Actions ------------------------------------------------------------------
+
+    def start_action(self, action_type):
+
+        # case 0: this action type DNE and needs to be registered
+        if (action_type not in self.logs):
+            self.logs[action_type] = [ {'start': self.__get_current_time(), 'end': 0} ]
+            return
+
+        # case 1: there are no actions on record
+        if (len(self.logs[action_type]) == 0):
+            self.logs[action_type].append({'start': self.__get_current_time(), 'end': 0})
+            return
+
+        # case 2: the latest action is already finished so we can register a new one
+        # -> note: if the current action is not finished yet, we can't do anything
+        current_action = self.logs[action_type][-1]
+        if (current_action['end'] > 0):
+            self.logs[action_type].append({'start': self.__get_current_time(), 'end': 0})
+            return
+
+
+    def end_action(self, action_type):
+
+        if ((action_type not in self.logs) or (len(self.logs[action_type]) == 0)):
+            return
+
+        last_index = len(self.logs[action_type]) - 1
+        if (self.logs[action_type][last_index]['end'] == 0):
+            self.logs[action_type][last_index]['end'] = self.__get_current_time()
+
+
+    def get_time_since_start(self):
+        t = self.__get_current_time() - self.time_initialized
+        return round(t, 2)
+
+
+    # returns the current time in milliseconds
+    def __get_current_time(self):
+        return int(round(time.time() * 1000))
+
+    # Stats --------------------------------------------------------------------
+
+    def print_stats(self):
+        for action_category, actions in self.logs.items():
+            mean, std_dev = self.__calc_average_time_for_action(actions)
+            print("Request: ", action_category)
+            print(" - total: ", len(actions), "requests")
+            if (len(actions) > 0):
+                print(" - mean: ", mean, "ms")
+                print(" - std_dev: ", std_dev, "ms")
+        print("Total Time: ", self.get_time_since_start(), "ms")
+
+    def __calc_average_time_for_action(self, actions):
+
+        mean    = 0
+        var     = 0
+        std_dev = 0
+
+        if (len(actions) == 0):
+            return mean, std_dev
+
+        # convert actions from {'start', 'end'} objects into time_per_action
+        times = []
+        for action in actions:
+            if (action['end'] > 0):
+                times.append(action['end'] - action['start'])
+
+        # calc mean
+        for t in times:
+            mean += t
+        mean = mean / len(times)
+
+        # calc std_dev
+        for t in times:
+            var += (mean - t) ** 2
+        if (len(times) > 1):
+            var = var / (len(times) - 1)
+        else:
+            var = var / (len(times))
+        std_dev = math.sqrt(var)
+
+        return round(mean, 2), round(std_dev, 2)
 
 # ==============================================================================
 # Twitch API
@@ -41,6 +142,10 @@ class TwitchAPI():
         self.v5API_headers = {'Client-ID': twitch_credentials['v5_client_id'], 'Accept': 'application/vnd.twitchtv.v5+json'}
         self.min_sleep_period = 1 / (800 / 60) # API has 800 requests per minute
         self.print_errors = print_errors
+
+        # initialize TimeLogs
+        request_types = ['get_livestreams', 'get_streamers', 'get_videos', 'get_game_name_in_video', 'get_followers', 'get_games']
+        self.request_logs = TimeLogs(request_types)
 
 
     # takes in a list of items and converts it into a list of tuples
@@ -69,6 +174,7 @@ class TwitchAPI():
     # returns a tuple ([list of livestreams], pagination_cursor)
     # src: https://dev.twitch.tv/docs/api/reference#get-streams
     def get_livestreams(self, previous_cursor = False):
+        self.request_logs.start_action('get_livestreams')
         livestreams = []
         cursor = False
         params = {} if (previous_cursor == False) else {'after': previous_cursor}
@@ -81,12 +187,14 @@ class TwitchAPI():
                 cursor = data['pagination']['cursor']
 
         self.__sleep(r.headers)
+        self.request_logs.end_action('get_livestreams')
         return livestreams, cursor
 
 
     # takes in an list of streamer_ids and *always* returns a list of streamer objects (even if size 1 or 0)
     # src: https://dev.twitch.tv/docs/api/reference#get-users
     def get_streamers(self, streamer_ids):
+        self.request_logs.start_action('get_streamers')
         streamers = []
         params = self.__format_tuple_params(streamer_ids, 'id')
         r = requests.get('https://api.twitch.tv/helix/users', params=params, headers=self.headers)
@@ -105,12 +213,14 @@ class TwitchAPI():
                 print("--------------")
 
         self.__sleep(r.headers)
+        self.request_logs.end_action('get_streamers')
         return streamers
 
 
     # gets a list of videos by a given streamer
     # src: https://dev.twitch.tv/docs/api/reference#get-videos
     def get_videos(self, streamer_id, previous_cursor = False, quantity = '100'):
+        self.request_logs.start_action('get_videos')
         videos = []
         quantity = str(quantity) if (isinstance(quantity, int)) else quantity
         params = {'user_id': streamer_id, 'first': quantity}
@@ -126,12 +236,14 @@ class TwitchAPI():
         else:
             cursor = False
         self.__sleep(r.headers)
+        self.request_logs.end_action('get_videos')
         return videos, cursor
 
     # returns the string name of a game played in a specified video
     # -> this uses the deprecated V5 API because the New API doesn't have this functionality
     # src: https://dev.twitch.tv/docs/v5/reference/videos#get-video
     def get_game_name_in_video(self, video_id):
+        self.request_logs.start_action('get_game_name_in_video')
         game = ""
         video_id = str(video_id) if (isinstance(video_id, int)) else video_id
         url = 'https://api.twitch.tv/kraken/videos/' + video_id
@@ -144,12 +256,14 @@ class TwitchAPI():
             return self.get_game_name_in_video(self, video_id)
 
         self.__sleep(r.headers)
+        self.request_logs.end_action('get_game_name_in_video')
         return game
 
 
     # gets the total # of followers for a given streamer
     # src: https://dev.twitch.tv/docs/api/reference#get-users-follows
     def get_followers(self, streamer_id):
+        self.request_logs.start_action('get_followers')
         total = -1
         params = {'to_id': streamer_id}
         r = requests.get('https://api.twitch.tv/helix/users/follows', params=params, headers=self.headers)
@@ -157,11 +271,13 @@ class TwitchAPI():
             data = r.json()
             total = data['total']
         self.__sleep(r.headers)
+        self.request_logs.end_action('get_followers')
         return total
 
     # takes in a list of game_ids and *always* returns a list of game objects (even if size 1)
     # src: https://dev.twitch.tv/docs/api/reference#get-games
     def get_games(self, game_ids):
+        self.request_logs.start_action('get_games')
         games = []
         params = self.__format_tuple_params(game_ids, 'id')
         r = requests.get('https://api.twitch.tv/helix/games', params=params, headers=self.headers)
@@ -169,6 +285,7 @@ class TwitchAPI():
             data = r.json()
             games = data['data']
         self.__sleep(r.headers)
+        self.request_logs.end_action('get_games')
         return games
 
 
@@ -182,10 +299,15 @@ class IGDBAPI():
         self.headers = {'user-key': client_id, 'Accept': 'application/json'}
         self.sleep_period = 0.075 # <- to be polite to IGDB's servers
 
+        request_types = ['search_for_game_by_name', 'search_for_games', 'search_for_game_covers']
+        self.request_logs = TimeLogs(request_types)
+
+
     # searches the IGDB API for a game
     # if result_as_array=True, then return the entire list of results from the IGDB search
     # otherwise, return just the first object
     def search_for_game_by_name(self, game_name, result_as_array = False):
+        self.request_logs.start_action('search_for_game_by_name')
         time.sleep(self.sleep_period)
         games = []
         body = "search \"" + game_name + "\"; fields *;"
@@ -198,6 +320,7 @@ class IGDBAPI():
                     game['igdb_box_art_url'] = covers[game_id]
                 games.append(game)
 
+        self.request_logs.end_action('search_for_game_by_name')
         if (result_as_array == True):
             return games
         elif (len(games) > 0):
@@ -209,6 +332,7 @@ class IGDBAPI():
     # searches for games with ids within range (offset, offset + 100)
     # returns tuple (list_of_games, new_offset)
     def search_for_games(self, offset = 0):
+        self.request_logs.start_action('search_for_games')
         time.sleep(self.sleep_period)
 
         games = []
@@ -229,6 +353,7 @@ class IGDBAPI():
                 game['igdb_box_art_url'] = game_covers[game_id] if (game_id in game_covers) else ""
                 games.append(game)
 
+        self.request_logs.end_action('search_for_games')
         return games, offset + 500
 
 
@@ -237,6 +362,7 @@ class IGDBAPI():
     # -> this action can return multiple covers for the same game, so we will pick the largest one for each game
     # -> unlike .search_for_games(), this function returns a dictionary of form {'game_id': 'url'}
     def search_for_game_covers(self, offset = 0):
+        self.request_logs.start_action('search_for_game_covers')
         time.sleep(self.sleep_period)
 
         covers_by_game = {}
@@ -263,6 +389,7 @@ class IGDBAPI():
                 covers_by_game[id] = 'https:' + covers_by_game[id]['url']
 
 
+        self.request_logs.end_action('search_for_game_covers')
         return covers_by_game
 
 # ==============================================================================
@@ -310,9 +437,10 @@ def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos
     # -> we can look up streamer profiles in bulk (batches of 100 IDs)
     #    so we want to break our livestreams into batches
     batch_num = 0
-    for batch in create_batches(streams, 100):
+    batches = create_batches(streams, 100)
+    for batch in batches:
 
-        print("BATCH ", batch_num)
+        print("BATCH ", batch_num, " / ", len(batches))
         batch_num += 1
 
         # get a list of all streamer_ids for this batch
@@ -331,6 +459,8 @@ def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos
             streamers.add_or_update_streamer(user)
             streamers.add_stream_data(stream_lookup[user_id])
 
+    twitchAPI.request_logs.print_stats()
+    print("Lasted: ", twitchAPI.request_logs.get_time_since_start())
     return streamers
 
 # .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
