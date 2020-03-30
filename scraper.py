@@ -13,6 +13,7 @@ import json
 import time
 import math
 import requests
+import argparse
 
 from games import *
 from streamers import *
@@ -460,7 +461,6 @@ def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos
             streamers.add_stream_data(stream_lookup[user_id])
 
     twitchAPI.request_logs.print_stats()
-    print("Lasted: ", twitchAPI.request_logs.get_time_since_start())
     return streamers
 
 # .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
@@ -543,16 +543,31 @@ def run():
     credentials = open('credentials.json')
     credentials = json.load(credentials)
 
-    # scrape the IGDB database for games
-    if (("-g" in sys.argv) or ("--games" in sys.argv)):
+    # declare CLI arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-g', '--games', dest='games', action="store_true", help='scrapes games from IGDB into /data/games.csv')
+    parser.add_argument('-s', '--streamers', dest='streamers', action="store_true", help='scrapes all livestreams from Twitch and compiles corresponding streamer profiles into /data/streamers.csv')
+    parser.add_argument('-v', '--videos', dest='videos', type=int, const=-1, nargs='?', help='scrapes video data for the N most popular streamers in the dataset that do not already have video data. If N missing, scrapes for all applicable streamers in dataset.')
+    parser.add_argument('-f', '--followers', dest='followers', type=int, const=-1, nargs='?', help='scrapes follower counts for the N most popular streamers in dataset that have not already had their follower count been recorded within the last 24 hours. If N missing, scrapes all applicable streamers in dataset.')
+    args = parser.parse_args()
+
+    # perform actions !
+    if args.games:
         igdbGames = compile_games_db(credentials['igdb'])
         igdbGames.export_to_csv('./data/games.csv')
         igdbGames.print_stats()
 
-
-    if (("-s" in sys.argv) or ("--streamers" in sys.argv)):
+    if args.streamers:
         streamers = compile_streamers_db(credentials['twitch'])
         streamers.export_to_csv('./data/streamers.csv')
+
+    if args.videos:
+        print('videos not built yet!')
+
+    if args.followers:
+        print('followers not built yet!')
+
+
 
 # Run --------------------------------------------------------------------------
 

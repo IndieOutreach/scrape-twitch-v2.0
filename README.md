@@ -130,10 +130,11 @@ Lookup tables that map { igdbID: name }
 ## Development Notes
 
 #### What is new in this commit?
-- Add TimeLogs to keep track of how long each request takes in TwitchAPI and IGDBAPI
+- scraper.py now uses argparse for CLI
 
 #### What is still in development? Known Issues?
  - Add scraper.add_videos_to_streamers_db()
+ - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
  - decouple getting follower counts from .compile_streamers_db() due to runtime issues
  - streamer profiles don't have a URL parameter for accessing their Twitch page
 
