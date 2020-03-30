@@ -59,15 +59,15 @@ class Streamer():
 
     def __init__(self, streamer_obj, from_csv = False):
         if (from_csv):
-            self.id = int(streamer_obj['id'])
-            self.display_name = streamer_obj['display_name']
+            self.id                = int(streamer_obj['id'])
+            self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
-            self.total_views = int(streamer_obj['total_views'])
-            self.description = streamer_obj['description']
-            self.num_followers = int(streamer_obj['num_followers'])
-            self.language = streamer_obj['language']
-            self.stream_history = self.__load_stream_history(streamer_obj['stream_history'])
-            self.last_updated = int(streamer_obj['last_updated'])
+            self.total_views       = int(streamer_obj['total_views'])
+            self.description       = streamer_obj['description']
+            self.follower_counts   = json.loads(streamer_obj['follower_counts'])
+            self.language          = streamer_obj['language']
+            self.stream_history    = self.__load_stream_history(streamer_obj['stream_history'])
+            self.last_updated      = int(streamer_obj['last_updated'])
 
         else:
             self.id                = int(streamer_obj['id'])
@@ -75,7 +75,7 @@ class Streamer():
             self.profile_image_url = streamer_obj['profile_image_url']
             self.total_views       = streamer_obj['view_count']
             self.description       = streamer_obj['description']
-            self.num_followers     = streamer_obj['num_followers'] if ('num_followers' in streamer_obj) else 0
+            self.follower_counts   = streamer_obj['follower_counts'] if ('follower_counts' in streamer_obj) else []
             self.language          = streamer_obj['language'] if ('language' in streamer_obj) else ""
             self.stream_history    = {} # will have format {twitch_game_id: num_times_played}
             self.last_updated      = streamer_obj['last_updated'] if ('last_updated' in streamer_obj) else 0
@@ -105,7 +105,6 @@ class Streamer():
         self.profile_image_url = streamer_obj['profile_image_url']
         self.total_views       = streamer_obj['view_count']
         self.description       = streamer_obj['description']
-        self.num_followers     = streamer_obj['num_followers'] if ('num_followers' in streamer_obj) else self.num_followers
         self.language          = streamer_obj['language'] if ('language' in streamer_obj) else self.language
         self.last_updated      = streamer_obj['last_updated'] if ('last_updated' in streamer_obj) else self.last_updated
 
@@ -146,7 +145,7 @@ class Streamer():
             'profile_image_url': self.profile_image_url,
             'total_views': self.total_views,
             'description': self.description,
-            'num_followers': self.num_followers,
+            'follower_counts': self.follower_counts,
             'language': self.language,
             'stream_history': self.stream_history,
             'last_updated': self.last_updated
@@ -203,7 +202,7 @@ class Streamers():
     def export_to_csv(self, filename):
         fieldnames = [
             'id', 'display_name', 'profile_image_url', 'total_views', 'description',
-            'num_followers', 'language', 'stream_history', 'last_updated'
+            'follower_counts', 'language', 'stream_history', 'last_updated'
         ]
         filename = filename if ('.csv' in filename) else filename + '.csv'
         with open(filename, 'w') as csvfile:

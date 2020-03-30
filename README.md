@@ -141,17 +141,16 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- TimeLogs and scraper.py now record stats about API endpoint runtimes during scraping procedures
-  - added to scraper.compile_games_db() and scraper.compile_streamers_db()
+- change streamer.followers (int) to streamer.follower_counts (list) so we can keep track of follower counts over time
+- remove get_followers() from the .compile_streamers_db() function over runtime concerns
 
 #### What is still in development? Known Issues?
  - Add scraper.add_videos_to_streamers_db()
- - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
- - decouple getting follower counts from .compile_streamers_db() due to runtime issues
+ - Add scraper.add_followers_to_streamers_db()
+  - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
  - streamer profiles don't have a URL parameter for accessing their Twitch page
  - tests.py output is cluttered due to printing non-test info at runtime in scraper.py
   - Convert scraper.py into a class and add a `silent_mode` feature?
-
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
@@ -161,3 +160,4 @@ Keeps track of actions and requests made by scraper.py
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)
  - Compile the [keyword, genre, theme, platform] alias tables for IGDB
  - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
+ - convert tests.py to use argparse for consistency

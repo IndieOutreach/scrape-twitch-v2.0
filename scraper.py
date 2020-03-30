@@ -264,7 +264,8 @@ class TwitchAPI():
         if (r.status_code == 200):
             data = r.json()
             for streamer in data['data']:
-                streamer['num_followers'] = self.get_followers(streamer['id'])
+                # streamer['follower_counts'] = self.get_followers(streamer['id'])
+                streamer['follower_counts'] = []
                 streamer['id'] = int(streamer['id'])
                 streamers.append(streamer)
         else:
@@ -528,26 +529,6 @@ def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos
     twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers')
     return streamers
 
-# .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
-# -> this function opens up the streamers DB and adds video data for streamers who are missing it
-# -> user can specify the number of streamers that get videos added in this execution
-def add_videos_to_streamers_db(twitch_credentials, filepath = './data/streamers.csv'):
-
-    print(".add_videos_to_streamers_db() is a WIP")
-    return
-
-    twitchAPI = TwitchAPI(twitch_credentials)
-    streamers = Streamers(filepath)
-
-    # CODE FOR SCRAPING VIDEOS
-    #if (streamers.get(user_id) == False):
-    #    print("scraping videos for streamer_id =", user_id)
-    #    if (streamers.get(user_id) == False):
-    #        for video in get_all_videos_for_streamer(twitchAPI, user_id, videos_limit):
-    #            if (video.game_name != ""):
-    #                streamer_videos.append(video)
-
-
 
 # returns all livestreams up to a limit
 # -> uses a lookup table of already observed livestream IDs to make sure we know when to end
@@ -599,6 +580,34 @@ def create_batches(l, batch_size):
     return new_list
 
 
+# Scrape Videos ----------------------------------------------------------------
+
+# .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
+# -> this function opens up the streamers DB and adds video data for streamers who are missing it
+# -> user can specify the number of streamers that get videos added in this execution
+def add_videos_to_streamers_db(twitch_credentials, filepath = './data/streamers.csv'):
+
+    print(".add_videos_to_streamers_db() is a WIP")
+    return
+
+    twitchAPI = TwitchAPI(twitch_credentials)
+    streamers = Streamers(filepath)
+
+    # CODE FOR SCRAPING VIDEOS
+    #if (streamers.get(user_id) == False):
+    #    print("scraping videos for streamer_id =", user_id)
+    #    if (streamers.get(user_id) == False):
+    #        for video in get_all_videos_for_streamer(twitchAPI, user_id, videos_limit):
+    #            if (video.game_name != ""):
+    #                streamer_videos.append(video)
+
+
+# Scrape Follower Counts -------------------------------------------------------
+
+def add_followers_to_streamers_db(twitch_credentials, filepath = './data/streamers.csv'):
+    print(".add_followers_to_streamers_db() is under construction")
+    return
+
 # Main -------------------------------------------------------------------------
 
 # Run the main scraper
@@ -627,10 +636,10 @@ def run():
         streamers.export_to_csv('./data/streamers.csv')
 
     if args.videos:
-        print('videos not built yet!')
+        add_videos_to_streamers_db()
 
     if args.followers:
-        print('followers not built yet!')
+        add_followers_to_streamers_db()
 
 
 

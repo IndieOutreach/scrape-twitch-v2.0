@@ -89,9 +89,9 @@ def test_twitch_api(clientID):
     if (followers >= 0):
         tests['followers1'] = False
 
-    # followers test 2: -> make sure that calling .get_streamers() includes follower count
+    # followers test 2: -> make sure that calling .get_streamers() includes an empty follower count list
     streamers = twitchAPI.get_streamers(streamer_ids)
-    if ((len(streamers) < 0) or ('num_followers' not in streamers[0]) or (streamers[0]['num_followers'] <= 0)):
+    if ((len(streamers) < 0) or ('follower_counts' not in streamers[0]) or (not isinstance(streamers[0]['follower_counts'], list))):
         tests['followers2'] = False
 
     # livestreams test 0: -> no parameters (should get the top livestreams on Twitch right now)
@@ -390,7 +390,7 @@ def validate_streamer(streamer):
         (len(streamer['display_name']) <= 0)                                  or
         ('https://static-cdn.jtvnw.net' not in streamer['profile_image_url']) or
         (streamer['total_views'] <= 0)                                        or
-        (streamer['num_followers'] <= 0)                                      or
+        (not isinstance(streamer['follower_counts'], list))                   or
         (streamer['language'] == '')                                          or
         (not validate_stream_history(streamer['stream_history']))             or
         (streamer['last_updated'] == 0)
