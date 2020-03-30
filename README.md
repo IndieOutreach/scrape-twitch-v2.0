@@ -141,7 +141,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Add streamer.login attribute and streamer.get_twitch_url()
+- Bug Fix in streamer.update()
 
 #### What is still in development? Known Issues?
  - Add scraper.add_videos_to_streamers_db()
@@ -150,6 +150,9 @@ Keeps track of actions and requests made by scraper.py
  - tests.py output is cluttered due to printing non-test info at runtime in scraper.py
   - Convert scraper.py into a class and add a `silent_mode` feature?
  - the function check_if_streamer_collection_same() in streamers.py is a *mess* readability wise
+ - remove streamer.last_updated for being redundant
+  - modify stream_history[game_id]['dates'] to be a list of {'streamed', 'scraped'} objects instead of just streamed
+  - add logic so stream_history records livestreams that have already been recorded but the game_id has switche
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs

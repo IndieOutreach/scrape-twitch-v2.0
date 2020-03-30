@@ -103,7 +103,7 @@ class Streamer():
             return False
 
     # updates profile information w/ new info from Twitch
-    def update(self, twitch_obj):
+    def update(self, streamer_obj):
         self.display_name      = streamer_obj['display_name']
         self.login             = streamer_obj['login']
         self.profile_image_url = streamer_obj['profile_image_url']
@@ -144,7 +144,7 @@ class Streamer():
 
     def get_twitch_url(self):
         return 'https://www.twitch.tv/' + self.login
-        
+
 
     def to_dict(self):
         obj = {
