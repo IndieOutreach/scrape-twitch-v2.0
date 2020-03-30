@@ -141,20 +141,19 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Bug Fix in streamer.update()
+- Remove streamer.last_updated
 
 #### What is still in development? Known Issues?
- - Add scraper.add_videos_to_streamers_db()
- - Add scraper.add_followers_to_streamers_db()
-  - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
- - tests.py output is cluttered due to printing non-test info at runtime in scraper.py
-  - Convert scraper.py into a class and add a `silent_mode` feature?
  - the function check_if_streamer_collection_same() in streamers.py is a *mess* readability wise
- - remove streamer.last_updated for being redundant
-  - modify stream_history[game_id]['dates'] to be a list of {'streamed', 'scraped'} objects instead of just streamed
-  - add logic so stream_history records livestreams that have already been recorded but the game_id has switche
+ - modify stream_history[game_id]['dates'] to be a list of {'streamed', 'scraped'} objects instead of just streamed
+ - add logic so stream_history records livestreams that have already been recorded but the game_id has switche
 
 #### What's next?
+ - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
+ - tests.py output is cluttered due to printing non-test info at runtime in scraper.py
+  - Convert scraper.py into a class and add a `silent_mode` feature?
+ - Add scraper.add_videos_to_streamers_db()
+ - Add scraper.add_followers_to_streamers_db()
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 
 
@@ -163,3 +162,4 @@ Keeps track of actions and requests made by scraper.py
  - Compile the [keyword, genre, theme, platform] alias tables for IGDB
  - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
  - convert tests.py to use argparse for consistency
+ - move TimeLogs over to its own file timelogs.py and add functions for calculating stats from those logs

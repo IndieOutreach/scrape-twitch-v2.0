@@ -393,8 +393,7 @@ def validate_streamer(streamer):
         (not validate_total_views(streamer['total_views']))                   or
         (not isinstance(streamer['follower_counts'], list))                   or
         (streamer['language'] == '')                                          or
-        (not validate_stream_history(streamer['stream_history']))             or
-        (streamer['last_updated'] == 0)
+        (not validate_stream_history(streamer['stream_history']))
         ):
         return False
     return True

@@ -69,7 +69,6 @@ class Streamer():
             self.follower_counts   = json.loads(streamer_obj['follower_counts'])
             self.language          = streamer_obj['language']
             self.stream_history    = self.__load_stream_history(streamer_obj['stream_history'])
-            self.last_updated      = int(streamer_obj['last_updated'])
 
         else:
             self.id                = int(streamer_obj['id'])
@@ -81,7 +80,6 @@ class Streamer():
             self.follower_counts   = streamer_obj['follower_counts'] if ('follower_counts' in streamer_obj) else []
             self.language          = streamer_obj['language'] if ('language' in streamer_obj) else ""
             self.stream_history    = {} # will have format {twitch_game_id: num_times_played}
-            self.last_updated      = streamer_obj['last_updated'] if ('last_updated' in streamer_obj) else 0
 
 
     # stream history, when JSONified, converts all game_ids into strings, even the ints
@@ -109,7 +107,6 @@ class Streamer():
         self.profile_image_url = streamer_obj['profile_image_url']
         self.description       = streamer_obj['description']
         self.language          = streamer_obj['language'] if ('language' in streamer_obj) else self.language
-        self.last_updated      = streamer_obj['last_updated'] if ('last_updated' in streamer_obj) else self.last_updated
         self.total_views.append({'views': streamer_obj['view_count'], 'date': int(time.time())})
 
 
@@ -118,10 +115,12 @@ class Streamer():
 
         # if this stream has already been accounted for, stop
         # if this stream is more recent than our last streamer update, note it
-        if ((stream.date == self.last_updated) and (stream.is_livestream)):
-            return
-        elif ((stream.date > self.last_updated) and (stream.is_livestream)):
-            self.last_updated = stream.date
+
+        # TODO: ADD LOGIC HERE
+        #if ((stream.date == self.last_updated) and (stream.is_livestream)):
+        #        return
+        #elif ((stream.date > self.last_updated) and (stream.is_livestream)):
+        #    self.last_updated = stream.date
 
         # add game info
         game_key = stream.twitch_game_id if (stream.is_livestream) else stream.game_name
@@ -156,8 +155,7 @@ class Streamer():
             'description': self.description,
             'follower_counts': self.follower_counts,
             'language': self.language,
-            'stream_history': self.stream_history,
-            'last_updated': self.last_updated
+            'stream_history': self.stream_history
         }
         return obj
 
@@ -213,7 +211,7 @@ class Streamers():
     def export_to_csv(self, filename):
         fieldnames = [
             'id', 'login', 'display_name', 'profile_image_url', 'total_views', 'description',
-            'follower_counts', 'language', 'stream_history', 'last_updated'
+            'follower_counts', 'language', 'stream_history'
         ]
         filename = filename if ('.csv' in filename) else filename + '.csv'
         with open(filename, 'w') as csvfile:
@@ -311,5 +309,4 @@ class Streamers():
                     if (val1 != val2): # case 6: the values of parameters are different between the two Streamers
                         print('checkpoint m')
 
-        print('checkpoint n')
         return True
