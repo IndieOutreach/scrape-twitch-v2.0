@@ -113,6 +113,8 @@ class Streamer():
     # adds data from a video or livestream
     def add_stream_data(self, stream):
 
+        def get_date_obj(streamed_date):
+            return {'streamed': streamed_date, 'scraped': int(time.time())}
         # if this stream has already been accounted for, stop
         # if this stream is more recent than our last streamer update, note it
 
@@ -129,15 +131,15 @@ class Streamer():
 
 
         if (game_key in self.stream_history):
-            self.stream_history[game_key]['num_videos'] += videos_contributed
-            self.stream_history[game_key]['num_views'] += views_contributed
-            self.stream_history[game_key]['dates'].append(stream.date)
+            self.stream_history[game_key]['videos'] += videos_contributed
+            self.stream_history[game_key]['views'] += views_contributed
+            self.stream_history[game_key]['dates'].append(get_date_obj(stream.date))
 
         else:
             self.stream_history[game_key] = {
-                'num_views': views_contributed,
-                'num_videos': videos_contributed,
-                'dates': [stream.date]
+                'views': views_contributed,
+                'videos': videos_contributed,
+                'dates': [get_date_obj(stream.date)]
             }
 
 
@@ -266,47 +268,111 @@ class Streamers():
                 val2 = obj2[key]
 
                 if (type(val1) != type(val2)): # case 4: the type of parameters aren't the same between Streamers
-                    print(type(val1))
-                    print(type(val2))
-                    print(key)
-                    print(val1)
-                    print(val2)
                     print('checkpoint e')
                     return False
 
-                if (isinstance(val1, dict)): # <- this will be the 'stream_history' parameter
-                    for k in val1:
-                        if (k not in val2):
-                            print(val1)
-                            print(val2)
-                            print('checkpoint f')
-                            return False
-
-                        if (type(val1[k]) != type(val2[k])):
-                            print('checkpoint g')
-                            return False
-                        if (val1[k] != val2[k]):
-                            print('checkpoint h')
-                            return False
-                elif (isinstance(val1, list) and (len(val1) > 0) and (isinstance(val1[0], dict))):
-                    if (len(val1) != len(val2)):
-                        print('checkpoint i')
+                # case 5: parameter values just aren't the same
+                if (key == 'stream_history'): # <- this will be the 'stream_history' parameter
+                    if (not self.__check_if_stream_histories_same(val1, val2)):
                         return False
-                    for i in range(len(val1)):
-                        item1 = val1[i]
-                        item2 = val2[i]
-                        for k in item1:
-                            if (k not in item2):
-                                print('checkpoint j')
-                                return False
-                            if (type(item1[k]) != type(item2[k])):
-                                print('checkpoint k')
-                                return False
-                            if (item1[k] != item2[k]):
-                                print('checkpoint al')
-                                return False
+                elif (key == 'total_views'):
+                    if (not self.__check_if_total_views_same(val1, val2)):
+                        return False
+                elif (key == 'follower_counts'):
+                    if (not self.__check_if_followers_same(val1, val2)):
+                        return False
                 else:
-                    if (val1 != val2): # case 6: the values of parameters are different between the two Streamers
+                    if (val1 != val2): 
                         print('checkpoint m')
 
+        return True
+
+
+    # returns True if the two given stream history objects are the same
+    # - stream history object has form { game_id: {'views': INT, 'videos': INT, dates: [DATE_OBJ]}}
+    # where
+    # - DATE_OBJ = {'scraped': INT_DATE, 'streamed': INT_DATE}
+    def __check_if_stream_histories_same(self, sh1, sh2):
+
+        # make sure stream history objects are dicts
+        if ((not isinstance(sh1, dict)) or (not isinstance(sh2, dict))):
+            return False
+
+        # make sure stream histories have the same number of games
+        if (len(sh1) != len(sh2)):
+            return False
+
+        # iterate over all games in stream history
+        for game_id in sh1:
+
+            # make sure both stream history objects have the same game
+            if (game_id not in sh2):
+                return False
+
+            # check to see if the INT attributes are the same
+            if (sh1[game_id]['views'] != sh2[game_id]['views']):
+                return False
+            if (sh1[game_id]['videos'] != sh2[game_id]['videos']):
+                return False
+
+            # check to make sure the date objects are the same
+            if (len(sh1[game_id]['dates']) != len(sh2[game_id]['dates'])):
+                return False
+
+            for i in range(len(sh1[game_id]['dates'])):
+                date_obj1 = sh1[game_id]['dates'][i]
+                date_obj2 = sh2[game_id]['dates'][i]
+
+                if (date_obj1['streamed'] != date_obj2['streamed']):
+                    return False
+                if (date_obj1['scraped'] != date_obj2['scraped']):
+                    return False
+
+        return True
+
+    # returns True if two total_views lists are the same
+    # - total_views has form: [{'views': INT, 'date': INT_DATE}]
+    def __check_if_total_views_same(self, views1, views2):
+
+        # make sure both views objects are lists
+        if ((not isinstance(views1, list)) or (not isinstance(views2, list))):
+            return False
+
+        # make sure both objects have the same number of views
+        if (len(views1) != len(views2)):
+            return False
+
+        # iterate over all views objects to make sure they are all the same
+        for i in range(len(views1)):
+            obj1 = views1[i]
+            obj2 = views2[i]
+
+            if (obj1['views'] != obj2['views']):
+                return False
+            if (obj1['date'] != obj2['date']):
+                return False
+        return True
+
+
+    # returns True if follower counts are the same
+    # - followers have form [{'followers': INT, 'date': INT_DATE}]
+    def __check_if_followers_same(self, followers1, followers2):
+
+        # make sure both objects are lists
+        if ((not isinstance(followers1, list)) or (not isinstance(followers2, list))):
+            return False
+
+        # make sure both have the same number of followers objects
+        if (len(followers1) != len(followers2)):
+            return False
+
+        # iterate over all followers objects to make sure they are the same
+        for i in range(len(followers1)):
+            obj1 = followers1[i]
+            obj2 = followers2[i]
+
+            if (obj1['followers'] != obj2['followers']):
+                return False
+            if (obj1['date'] != obj2['date']):
+                return False
         return True

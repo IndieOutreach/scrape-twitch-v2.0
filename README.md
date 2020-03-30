@@ -96,6 +96,7 @@ Streamer profiles
 
 Data from Twitch API:
  - `id` - unique Twitch user ID
+ - `login` - the login name of a streamer, can be used to make their Twitch URL
  - `display_name`- the streamer's name
  - `profile_image_url` - the streamer's profile picture
  - `total_views` - A list of `{views: # views, date: UNIX_EPOCH_TIME}` objects. These objects represent the total number of views a streamer has at certain dates (different than the calculated number IndieOutreach will use)
@@ -103,7 +104,8 @@ Data from Twitch API:
  - `num_followers` - number of followers this streamer has
 
 Data aggregated from streams:
- - `stream_history` - a JSON object of format `{twitch_game_id: {times_played: 12, views: 123, num_videos: 1, dates: [timestamps...]}, ....}`
+ - `stream_history` - a JSON object of format `{twitch_game_id: {views: 123, num_videos: 1, dates: [DATE_OBJ...]}, ....}`
+  - where DATE_OBJ = `{scraped: INT_DATE, streamed: INT_DATE}`
   - Note: views does not include the views on videos, so you'd have to to account for this when calculating average views
  - `language` - this value is just whatever the last processed stream's language was
 
@@ -141,10 +143,9 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Remove streamer.last_updated
+- Make streamers.check_if_streamer_collection_same() more readable
 
 #### What is still in development? Known Issues?
- - the function check_if_streamer_collection_same() in streamers.py is a *mess* readability wise
  - modify stream_history[game_id]['dates'] to be a list of {'streamed', 'scraped'} objects instead of just streamed
  - add logic so stream_history records livestreams that have already been recorded but the game_id has switche
 

@@ -350,9 +350,9 @@ def test_scrape_streamers(twitch_credentials, igdb_credentials):
 
     # twitch test 0: -> make sure that scraper.py can scrape all livestreams on Twitch
     #  - make sure that the function executes properly (average number of concurrent livestreams is < 200k)
-    twitchAPI = TwitchAPI(twitch_credentials)
-    if (len(scraper.get_all_livestreams(twitchAPI)) > 250000):
-            tests['twitch0'] = False
+    #twitchAPI = TwitchAPI(twitch_credentials)
+    #if (len(scraper.get_all_livestreams(twitchAPI)) > 250000):
+    #        tests['twitch0'] = False
 
     # compile test 0: -> make sure scraped streamers have games data
     streamers = scraper.compile_streamers_db(twitch_credentials, 5, 50)
@@ -403,8 +403,8 @@ def validate_stream_history(stream_history):
     for game_key in stream_history:
         game = stream_history[game_key]
         if (
-            (('num_views' not in game) or (not isinstance(game['num_views'], int)))   or
-            (('num_videos' not in game) or (not isinstance(game['num_videos'], int))) or
+            (('views' not in game) or (not isinstance(game['views'], int)))   or
+            (('videos' not in game) or (not isinstance(game['videos'], int))) or
             (('dates' not in game) or (len(game['dates']) <= 0))
             ):
             return False
