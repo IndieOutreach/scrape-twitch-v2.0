@@ -61,6 +61,7 @@ class Streamer():
     def __init__(self, streamer_obj, from_csv = False):
         if (from_csv):
             self.id                = int(streamer_obj['id'])
+            self.login             = streamer_obj['login']
             self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
             self.total_views       = json.loads(streamer_obj['total_views'])
@@ -72,6 +73,7 @@ class Streamer():
 
         else:
             self.id                = int(streamer_obj['id'])
+            self.login             = streamer_obj['login']
             self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
             self.total_views       = [ {'views': streamer_obj['view_count'], 'date': int(time.time())} ]
@@ -103,6 +105,7 @@ class Streamer():
     # updates profile information w/ new info from Twitch
     def update(self, twitch_obj):
         self.display_name      = streamer_obj['display_name']
+        self.login             = streamer_obj['login']
         self.profile_image_url = streamer_obj['profile_image_url']
         self.description       = streamer_obj['description']
         self.language          = streamer_obj['language'] if ('language' in streamer_obj) else self.language
@@ -139,9 +142,14 @@ class Streamer():
             }
 
 
+    def get_twitch_url(self):
+        return 'https://www.twitch.tv/' + self.login
+        
+
     def to_dict(self):
         obj = {
             'id': self.id,
+            'login': self.login,
             'display_name': self.display_name,
             'profile_image_url': self.profile_image_url,
             'total_views': self.total_views,
@@ -204,7 +212,7 @@ class Streamers():
 
     def export_to_csv(self, filename):
         fieldnames = [
-            'id', 'display_name', 'profile_image_url', 'total_views', 'description',
+            'id', 'login', 'display_name', 'profile_image_url', 'total_views', 'description',
             'follower_counts', 'language', 'stream_history', 'last_updated'
         ]
         filename = filename if ('.csv' in filename) else filename + '.csv'

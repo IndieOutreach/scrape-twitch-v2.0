@@ -387,6 +387,7 @@ def validate_streamer(streamer):
     streamer = streamer.to_dict()
     if (
         (streamer['id'] <= 0)                                                 or
+        (len(streamer['login']) <= 0)                                         or
         (len(streamer['display_name']) <= 0)                                  or
         ('https://static-cdn.jtvnw.net' not in streamer['profile_image_url']) or
         (not validate_total_views(streamer['total_views']))                   or
