@@ -127,16 +127,30 @@ Lookup tables that map { igdbID: name }
  - player_perspectives.csv
 
 
+## Logs
+Keeps track of actions and requests made by scraper.py
+
+#### Runtime of Scraping Procedures-> runtime.csv
+ - `time_started` - the unix epoch date (in milliseconds) that the procedure started on. This serves as a unique ID  
+ - `time_ended` - the unix epoch date (in milleseconds) that the procedure ended on
+ - `content_type` - The type of content that was scraped during procedure
+  - Value is a string from list ['streamers', 'games', 'followers', 'videos']
+ - `logs` - an object with the stats about the procedure's runtime
+  - of form: `{ action_type: {'n': NUM_REQUESTS, 'total': TOTAL_TIME_TAKEN, 'mean': MEAN_TIME_PER_REQUEST, 'std_dev': STD_DEV_OF_TIME_PER_REQUEST, 'min': MIN_TIME_FOR_A_REQUEST, 'max': MAX_TIME_FOR_A_REQUEST, 'first_start': UNIX_EPOCH_TIMESTAMP_OF_WHEN_FIRST_REQUEST_STARTED, 'last_end': UNIX_EPOCH_TIMESTAMP_OF_WHEN_LAST_REQUEST_ENDED}, ... }`
+
 ## Development Notes
 
 #### What is new in this commit?
-- scraper.py now uses argparse for CLI
+- TimeLogs and scraper.py now record stats about API endpoint runtimes during scraping procedures
+  - added to scraper.compile_games_db() and scraper.compile_streamers_db()
 
 #### What is still in development? Known Issues?
  - Add scraper.add_videos_to_streamers_db()
  - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
  - decouple getting follower counts from .compile_streamers_db() due to runtime issues
  - streamer profiles don't have a URL parameter for accessing their Twitch page
+ - tests.py output is cluttered due to printing non-test info at runtime in scraper.py
+  - Convert scraper.py into a class and add a `silent_mode` feature?
 
 
 #### What's next?

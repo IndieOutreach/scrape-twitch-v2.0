@@ -420,11 +420,13 @@ def test_timelogs(twitch_credentials):
 
     test_names = [
         'init0', 'init1',
-        'run0', 'run1', 'run2'
+        'run0', 'run1', 'run2',
+        'save0'
     ]
     tests = get_empty_test(test_names)
 
     twitchAPI = TwitchAPI(twitch_credentials)
+    test_csv_file = './test/runtime.csv'
 
     # initialize 0: -> make sure logs are initialized to be empty
     for key, value in twitchAPI.request_logs.logs.items():
@@ -454,6 +456,20 @@ def test_timelogs(twitch_credentials):
     for action in twitchAPI.request_logs.logs['get_livestreams']:
         if (action['start'] > action['end']):
             tests['run2'] = False
+
+    # save 0: -> save to CSV file
+    twitchAPI.request_logs.export_to_csv(test_csv_file, 'test1')
+    content = twitchAPI.request_logs.load_from_csv(test_csv_file)
+    if (len(content) == 0):
+        tests['save0'] = False
+    else:
+        old_length = len(content)
+        twitchAPI.get_livestreams()
+        twitchAPI.request_logs.export_to_csv(test_csv_file, 'test2')
+        content = twitchAPI.request_logs.load_from_csv(test_csv_file)
+        if (len(content) <= old_length):
+            tests['save0'] = False
+
 
     print_test_results("TimeLogs", tests)
     twitchAPI.request_logs.print_stats()

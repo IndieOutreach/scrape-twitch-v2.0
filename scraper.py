@@ -79,28 +79,43 @@ class TimeLogs():
 
     def print_stats(self):
         for action_category, actions in self.logs.items():
-            mean, std_dev = self.__calc_average_time_for_action(actions)
+            stats = self.__calc_stats_about_action(actions)
             print("Request: ", action_category)
-            print(" - total: ", len(actions), "requests")
+            print(" - total: ", stats['n'], "requests")
             if (len(actions) > 0):
-                print(" - mean: ", mean, "ms")
-                print(" - std_dev: ", std_dev, "ms")
+                print(" - mean: ", stats['mean'], "ms")
+                print(" - std_dev: ", stats['std_dev'], "ms")
+                print(" - min: ", stats['min'], "ms")
+                print(" - max: ", stats['max'], "ms")
         print("Total Time: ", self.get_time_since_start(), "ms")
 
-    def __calc_average_time_for_action(self, actions):
+    # gets stats about each request in logs
+    def get_stats_from_logs(self):
+        stats = {}
+        for action_category, actions in self.logs.items():
+            stats[action_category] =  self.__calc_stats_about_action(actions)
+        return stats
 
-        mean    = 0
-        var     = 0
-        std_dev = 0
+    def __calc_stats_about_action(self, actions):
+
+        first_start, last_end = False, False
+        min_val, max_val   = 9999999, -1
+        mean, var, std_dev = 0, 0, 0
 
         if (len(actions) == 0):
-            return mean, std_dev
+            return {'n': 0, 'min': 0, 'max': 0, 'std_dev': 0, 'first_start': 0, 'last_end': 0}
 
         # convert actions from {'start', 'end'} objects into time_per_action
         times = []
         for action in actions:
             if (action['end'] > 0):
-                times.append(action['end'] - action['start'])
+                time_took = action['end'] - action['start']
+                times.append(time_took)
+                min_val = time_took if (time_took < min_val) else min_val
+                max_val = time_took if (time_took > max_val) else max_val
+
+                first_start = action['start'] if ((first_start == False) or (action['start'] < first_start)) else first_start
+                last_end = action['end'] if ((last_end == False) or (action['end'] > last_end)) else last_end
 
         # calc mean
         for t in times:
@@ -116,7 +131,54 @@ class TimeLogs():
             var = var / (len(times))
         std_dev = math.sqrt(var)
 
-        return round(mean, 2), round(std_dev, 2)
+        stats = {
+            'n': len(actions),
+            'min': min_val,
+            'max': max_val,
+            'mean': round(mean, 2),
+            'std_dev': round(std_dev, 2),
+            'first_start': first_start,
+            'last_end': last_end
+        }
+        return stats
+
+
+    # File I/O -----------------------------------------------------------------
+
+    # NOTE: TimeLogs is an individual log entry.
+    # -> In order to save and not overwrite previous logs, need to load them as an array and add current TimeLog to the end
+    def export_to_csv(self, filename, content_type):
+        # get content ready
+        content = self.load_from_csv(filename)
+        content.append({
+            'time_started': self.time_initialized,
+            'time_ended': self.__get_current_time(),
+            'content_type': content_type,
+            'logs': self.get_stats_from_logs()
+        })
+
+        # write file
+        fieldnames = ['time_started', 'time_ended', 'content_type', 'logs']
+        filename = filename if ('.csv' in filename) else filename + '.csv'
+        with open(filename, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in content:
+                writer.writerow(row)
+
+
+    def load_from_csv(self, filename):
+        contents = []
+        filename = filename if ('.csv' in filename) else filename + '.csv'
+        try:
+            with open(filename) as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    contents.append(row)
+        except IOError:
+            print(filename, "does not exist yet")
+
+        return contents
 
 # ==============================================================================
 # Twitch API
@@ -420,6 +482,8 @@ def compile_games_db(igdb_credentials, limit = 9999999):
         games.print_stats()
         search_results, offset = igdbAPI.search_for_games(offset)
 
+    igdbAPI.request_logs.print_stats()
+    igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'games')
     return games
 
 
@@ -461,6 +525,7 @@ def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos
             streamers.add_stream_data(stream_lookup[user_id])
 
     twitchAPI.request_logs.print_stats()
+    twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers')
     return streamers
 
 # .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
