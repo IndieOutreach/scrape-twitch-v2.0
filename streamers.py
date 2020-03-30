@@ -13,6 +13,7 @@
 import sys
 import csv
 import json
+import time
 import datetime
 
 # ==============================================================================
@@ -62,7 +63,7 @@ class Streamer():
             self.id                = int(streamer_obj['id'])
             self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
-            self.total_views       = int(streamer_obj['total_views'])
+            self.total_views       = json.loads(streamer_obj['total_views'])
             self.description       = streamer_obj['description']
             self.follower_counts   = json.loads(streamer_obj['follower_counts'])
             self.language          = streamer_obj['language']
@@ -73,7 +74,7 @@ class Streamer():
             self.id                = int(streamer_obj['id'])
             self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
-            self.total_views       = streamer_obj['view_count']
+            self.total_views       = [ {'views': streamer_obj['view_count'], 'date': int(time.time())} ]
             self.description       = streamer_obj['description']
             self.follower_counts   = streamer_obj['follower_counts'] if ('follower_counts' in streamer_obj) else []
             self.language          = streamer_obj['language'] if ('language' in streamer_obj) else ""
@@ -103,10 +104,10 @@ class Streamer():
     def update(self, twitch_obj):
         self.display_name      = streamer_obj['display_name']
         self.profile_image_url = streamer_obj['profile_image_url']
-        self.total_views       = streamer_obj['view_count']
         self.description       = streamer_obj['description']
         self.language          = streamer_obj['language'] if ('language' in streamer_obj) else self.language
         self.last_updated      = streamer_obj['last_updated'] if ('last_updated' in streamer_obj) else self.last_updated
+        self.total_views.append({'views': streamer_obj['view_count'], 'date': int(time.time())})
 
 
     # adds data from a video or livestream
@@ -155,6 +156,8 @@ class Streamer():
     def to_exportable_dict(self):
         obj = self.to_dict()
         obj['stream_history'] = json.dumps(obj['stream_history'])
+        obj['total_views'] = json.dumps(obj['total_views'])
+        obj['follower_counts'] = json.dumps(obj['follower_counts'])
         return obj
 
 # ==============================================================================
@@ -228,6 +231,7 @@ class Streamers():
 
         # case 0: there are an uneven number of streamers in each collection
         if (len(self.streamers) != len(streamers2.streamers)):
+            print('checkpoint a')
             return False
 
         for streamer_id in self.streamers:
@@ -237,6 +241,7 @@ class Streamers():
 
             # case 1: 1 collection has a specified streamer but the other doesn't
             if ((streamer1 == False) or (streamer2 == False)):
+                print('checkpoint b')
                 return False
 
             obj1 = streamer1.to_dict()
@@ -244,15 +249,23 @@ class Streamers():
 
             # case 2: the collection's Streamer objects hav ea different number of parameters
             if (len(obj1) != len(obj2)):
+                print('checkpoint c')
                 return False
 
             for key in obj1:
                 val1 = obj1[key]
                 if (key not in obj2): # case 3: one Game has a parameter that the other lacks
+                    print('checkpoint d')
                     return False
                 val2 = obj2[key]
 
                 if (type(val1) != type(val2)): # case 4: the type of parameters aren't the same between Streamers
+                    print(type(val1))
+                    print(type(val2))
+                    print(key)
+                    print(val1)
+                    print(val2)
+                    print('checkpoint e')
                     return False
 
                 if (isinstance(val1, dict)): # <- this will be the 'stream_history' parameter
@@ -260,14 +273,35 @@ class Streamers():
                         if (k not in val2):
                             print(val1)
                             print(val2)
+                            print('checkpoint f')
                             return False
 
                         if (type(val1[k]) != type(val2[k])):
+                            print('checkpoint g')
                             return False
                         if (val1[k] != val2[k]):
+                            print('checkpoint h')
                             return False
+                elif (isinstance(val1, list) and (len(val1) > 0) and (isinstance(val1[0], dict))):
+                    if (len(val1) != len(val2)):
+                        print('checkpoint i')
+                        return False
+                    for i in range(len(val1)):
+                        item1 = val1[i]
+                        item2 = val2[i]
+                        for k in item1:
+                            if (k not in item2):
+                                print('checkpoint j')
+                                return False
+                            if (type(item1[k]) != type(item2[k])):
+                                print('checkpoint k')
+                                return False
+                            if (item1[k] != item2[k]):
+                                print('checkpoint al')
+                                return False
                 else:
                     if (val1 != val2): # case 6: the values of parameters are different between the two Streamers
-                        return False
+                        print('checkpoint m')
 
+        print('checkpoint n')
         return True

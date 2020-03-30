@@ -98,7 +98,7 @@ Data from Twitch API:
  - `id` - unique Twitch user ID
  - `display_name`- the streamer's name
  - `profile_image_url` - the streamer's profile picture
- - `total_views` - the total number of views (different than the calculated number IndieOutreach will use)
+ - `total_views` - A list of `{views: # views, date: UNIX_EPOCH_TIME}` objects. These objects represent the total number of views a streamer has at certain dates (different than the calculated number IndieOutreach will use)
  - `description` - user's bio
  - `num_followers` - number of followers this streamer has
 
@@ -141,16 +141,18 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- change streamer.followers (int) to streamer.follower_counts (list) so we can keep track of follower counts over time
-- remove get_followers() from the .compile_streamers_db() function over runtime concerns
+- modify streamer.total_views to be a list of total_views over time rather than a singular int
 
 #### What is still in development? Known Issues?
  - Add scraper.add_videos_to_streamers_db()
  - Add scraper.add_followers_to_streamers_db()
   - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
  - streamer profiles don't have a URL parameter for accessing their Twitch page
+  - Twitch doesn't provide this, but we can use their login name for this
+  - Need to add streamer.login as a parameter
  - tests.py output is cluttered due to printing non-test info at runtime in scraper.py
   - Convert scraper.py into a class and add a `silent_mode` feature?
+ - the function check_if_streamer_collection_same() in streamers.py is a *mess* readability wise
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs

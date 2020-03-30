@@ -352,7 +352,7 @@ def test_scrape_streamers(twitch_credentials, igdb_credentials):
     #  - make sure that the function executes properly (average number of concurrent livestreams is < 200k)
     twitchAPI = TwitchAPI(twitch_credentials)
     if (len(scraper.get_all_livestreams(twitchAPI)) > 250000):
-        tests['twitch0'] = False
+            tests['twitch0'] = False
 
     # compile test 0: -> make sure scraped streamers have games data
     streamers = scraper.compile_streamers_db(twitch_credentials, 5, 50)
@@ -389,7 +389,7 @@ def validate_streamer(streamer):
         (streamer['id'] <= 0)                                                 or
         (len(streamer['display_name']) <= 0)                                  or
         ('https://static-cdn.jtvnw.net' not in streamer['profile_image_url']) or
-        (streamer['total_views'] <= 0)                                        or
+        (not validate_total_views(streamer['total_views']))                   or
         (not isinstance(streamer['follower_counts'], list))                   or
         (streamer['language'] == '')                                          or
         (not validate_stream_history(streamer['stream_history']))             or
@@ -410,6 +410,18 @@ def validate_stream_history(stream_history):
             return False
     return True
 
+# makes sure that a total_views object is correctly formatted and has some view counts
+def validate_total_views(total_views):
+    if ((not (isinstance(total_views, list)) or (len(total_views) == 0))):
+        return False
+
+    for obj in total_views:
+        if (
+            (('views' not in obj) or (obj['views'] <= 0)) or
+            (('date' not in obj) or (obj['date'] <= 0))
+            ):
+            return False
+    return True
 
 # ==============================================================================
 # Test TimeLogs
