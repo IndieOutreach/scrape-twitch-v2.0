@@ -541,8 +541,9 @@ class Scraper():
         batches = self.create_batches(streams, 100)
         for batch in batches:
 
-            print("BATCH ", batch_num, " / ", len(batches))
-            batch_num += 1
+            if (self.mode == 'production'):
+                print("BATCH ", batch_num, " / ", len(batches))
+                batch_num += 1
 
             # get a list of all streamer_ids for this batch
             streamer_ids = []
@@ -571,7 +572,8 @@ class Scraper():
     # -> uses a lookup table of already observed livestream IDs to make sure we know when to end
     def get_all_livestreams(self, limit = 9999999):
 
-        print('\nScraping livestreams...')
+        if (self.mode == 'production'):
+            print('\nScraping livestreams...')
         streams = []
         livestreams, cursor = self.twitchAPI.get_livestreams()
         livestream_ids = {}
@@ -641,9 +643,33 @@ class Scraper():
 
     # Scrape Follower Counts ---------------------------------------------------
 
-    def add_followers_to_streamers_db(self, filepath = './data/streamers.csv'):
-        print(".add_followers_to_streamers_db() is under construction")
-        return
+    # loads all the streamers from the streamers.csv file and searches for follower data for them
+    def add_followers_to_streamers_db(self, filepath = './data/streamers.csv', limit=9999999):
+
+        streamers = Streamers(filepath)
+        streamer_ids = streamers.get_streamer_ids()
+
+        # we can't add followers if there are no streamer profiles to add to
+        if (len(streamer_ids) == 0):
+            return
+
+        # iterate over each streamer object and add a followers count to their profile
+        for i in range(len(streamer_ids)):
+            if (i > limit):
+                return
+
+            streamer_id = streamer_ids[i]
+            if (self.mode == 'production'):
+                print(i, ": ", streamer_ids[i])
+            num_followers = self.twitchAPI.get_followers(streamer_id)
+            streamers.add_follower_data(streamer_id, num_followers)
+
+        # save our results
+        if (self.mode == 'production'):
+            self.igdbAPI.request_logs.print_stats()
+            self.igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'followers', len(streamer_ids))
+
+        return streamers
 
 
 

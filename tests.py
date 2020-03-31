@@ -356,6 +356,7 @@ def test_scrape_streamers(credentials):
 
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
+
     # twitch test 0: -> make sure that scraper.py can scrape all livestreams on Twitch
     #  - make sure that the function executes properly (average number of concurrent livestreams is < 200k)
     #twitchAPI = TwitchAPI(twitch_credentials)
@@ -495,6 +496,58 @@ def test_timelogs(credentials):
 
     print_test_results(tests)
 
+# ==============================================================================
+# Test Add Followers
+# ==============================================================================
+
+def test_add_followers(credentials):
+
+    print_test_title("Add Followers")
+    test_names = [
+        'followers0'
+    ]
+    tests = get_empty_test(test_names)
+
+    scraper = Scraper(credentials)
+    scraper.set_mode('testing')
+
+
+    # followers0: -> make sure that a streamer's follower_counts increases
+    # Because .add_followers_to_streamers_db() *needs* a filepath, we will create a .csv file for it to load
+    streamers1 = scraper.compile_streamers_db(5, 10)
+    streamers1.export_to_csv('./test/streamers.csv')
+    streamers2 = scraper.add_followers_to_streamers_db('./test/streamers.csv')
+
+    for id in streamers1.get_streamer_ids():
+        if (id not in streamers2.get_streamer_ids()):
+            tests['followers0'] = False
+
+        streamer1 = streamers1.get(id)
+        streamer2 = streamers2.get(id)
+
+        if (len(streamer2.follower_counts) <= len(streamer1.follower_counts)):
+            tests['followers0'] = False
+        elif (not validate_follower_counts(streamer2.follower_counts)):
+            tests['followers0'] = False
+
+
+    print_test_results(tests)
+
+
+# makes sure follower_counts has format:
+# - [{'followers': INT, 'date': INT_DATE}]
+def validate_follower_counts(counts):
+    for obj in counts:
+        if (not isinstance(obj, dict)):
+            return False
+        if (('followers' not in obj) or (not isinstance(obj['followers'], int))):
+            return False
+        if (('date' not in obj) or (obj['date'] <= 0)):
+            return False
+
+    return True
+
+
 
 # ==============================================================================
 # Main Functions
@@ -557,6 +610,8 @@ def main():
         test_scrape_streamers(credentials)
     if ((len(testing) == 0) or ("TimeLogs" in testing)):
         test_timelogs(credentials)
+    if ((len(testing) == 0) or ("Add Followers" in testing)):
+        test_add_followers(credentials)
 
 
 # Run --------------------------------------------------------------------------

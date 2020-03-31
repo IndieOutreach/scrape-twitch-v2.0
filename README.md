@@ -102,7 +102,7 @@ Data from Twitch API:
  - `profile_image_url` - the streamer's profile picture
  - `total_views` - A list of `{views: # views, date: UNIX_EPOCH_TIME}` objects. These objects represent the total number of views a streamer has at certain dates (different than the calculated number IndieOutreach will use)
  - `description` - user's bio
- - `num_followers` - number of followers this streamer has
+ - `follower_counts` - List of `{followers: INT, date: DATE_INT}` objects that show how many followers the streamer has over time
 
 Data aggregated from streams:
  - `stream_history` - a JSON object of format `{twitch_game_id: {views: 123, num_videos: 1, dates: [DATE_OBJ...]}, ....}`
@@ -146,13 +146,14 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Streamers and Games now have a Try/Except on opening their respective .csv files 
+- Add scraper.add_followers_to_streamers_db()
+ - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
 
 #### What is still in development? Known Issues?
+ - Scraper.compile_streamers_db() still has a videos_limit parameter, despite no longer scraping videos
+ - add a print function to Streamers with custom logic instead of checking for self.mode == 'production' every time
 
 #### What's next?
- - Add scraper.add_followers_to_streamers_db()
-  - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
  - Add scraper.add_videos_to_streamers_db()
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 
@@ -163,3 +164,4 @@ Keeps track of actions and requests made by scraper.py
  - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
  - convert tests.py to use argparse for consistency
  - move TimeLogs over to its own file timelogs.py and add functions for calculating stats from those logs
+ - Add `reset_logs` function to Scraper so you can re-use the same Scraper instance between different scraping procedures and not double-up on log data

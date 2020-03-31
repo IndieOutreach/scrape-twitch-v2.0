@@ -110,6 +110,11 @@ class Streamer():
         self.total_views.append({'views': streamer_obj['view_count'], 'date': int(time.time())})
 
 
+    # adds a new entry to follower_count
+    def add_follower_data(self, followers):
+        self.follower_counts.append({'followers': followers, 'date': int(time.time())})
+
+
     # adds data from a video or livestream
     def add_stream_data(self, stream):
 
@@ -199,8 +204,11 @@ class Streamers():
         return False
 
     # returns a list of all streamer IDs in collection
+    # this list is sorted so that it will return consistent results
     def get_streamer_ids(self):
-        return list(self.streamers.keys())
+        ids = list(self.streamers.keys())
+        ids.sort()
+        return ids
 
     # insert -------------------------------------------------------------------
 
@@ -217,6 +225,12 @@ class Streamers():
     def add_stream_data(self, stream):
         if (stream.user_id in self.streamers):
             self.streamers[stream.user_id].add_stream_data(stream)
+
+    # for a specific streamer, add a new follower count to streamer.follower_counts
+    def add_follower_data(self, streamer_id, followers):
+        if (streamer_id in self.streamers):
+            self.streamers[streamer_id].add_follower_data(followers)
+
 
     # File I/O -----------------------------------------------------------------
 
