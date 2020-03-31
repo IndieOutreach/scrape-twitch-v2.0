@@ -13,7 +13,7 @@ This scraping tool is built in Python 3.7.6 and uses the requests library for in
  - Create your own `./credentials.json` (format specified below) so scraper.py can access the necessary APIs using your account info.
 
 #### pip installations
- - `requests-oauthlib` for making OAuth2 requests to Twitch's API
+ - none
 
 #### How to Run
  - run `python tests.py` to run the test suite and make sure all components of the scraper work
@@ -29,8 +29,6 @@ Used for scraping data from the Twitch and IGDB APIs
 Flags:
  - `-g` or `--games`: uses the IGDB API to compile all games from IGDB into '/data/games.csv'
  - `-s` or `--streamers`: use the Twitch API to scrape all livestreams on Twitch, search for streamer profiles, and use that to build '/data/streamers.csv'
-  - this option will also add 'twitch_box_art_url' to Games from '/data/games.csv' where necessary
-  - this option will add Twitch->IGDB ID conversions as well
 
 #### tests.py
 Testing script that checks functionality in scraper.py
@@ -50,8 +48,11 @@ Format:
 #### /data
 Folder contains all the .csv files that scraper compiles
 
-#### /test_csv_output
+#### /test
 Folder contains all the .csv files that are generated during testing
+
+#### /logs
+Folder contains the .csv log files generated during scraping
 
 ## Raw Data
 Data that is scraped and used or stored.
