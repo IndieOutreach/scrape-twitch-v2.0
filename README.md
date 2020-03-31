@@ -143,18 +143,17 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Make streamers.check_if_streamer_collection_same() more readable
+- add logic so stream_history records livestreams that have already been recorded but the game_id has switche
 
 #### What is still in development? Known Issues?
- - modify stream_history[game_id]['dates'] to be a list of {'streamed', 'scraped'} objects instead of just streamed
- - add logic so stream_history records livestreams that have already been recorded but the game_id has switche
+
 
 #### What's next?
- - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
  - tests.py output is cluttered due to printing non-test info at runtime in scraper.py
   - Convert scraper.py into a class and add a `silent_mode` feature?
  - Add scraper.add_videos_to_streamers_db()
  - Add scraper.add_followers_to_streamers_db()
+  - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 
 

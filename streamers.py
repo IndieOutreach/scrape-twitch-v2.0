@@ -115,25 +115,19 @@ class Streamer():
 
         def get_date_obj(streamed_date):
             return {'streamed': streamed_date, 'scraped': int(time.time())}
-        # if this stream has already been accounted for, stop
-        # if this stream is more recent than our last streamer update, note it
-
-        # TODO: ADD LOGIC HERE
-        #if ((stream.date == self.last_updated) and (stream.is_livestream)):
-        #        return
-        #elif ((stream.date > self.last_updated) and (stream.is_livestream)):
-        #    self.last_updated = stream.date
 
         # add game info
         game_key = stream.twitch_game_id if (stream.is_livestream) else stream.game_name
         views_contributed = stream.views if (stream.is_livestream) else 0
         videos_contributed = 0 if (stream.is_livestream) else 1
+        last_stream_date, recent_streamed_games = self.get_most_recent_streamed_games()
 
 
         if (game_key in self.stream_history):
             self.stream_history[game_key]['videos'] += videos_contributed
             self.stream_history[game_key]['views'] += views_contributed
-            self.stream_history[game_key]['dates'].append(get_date_obj(stream.date))
+            if (game_key not in recent_streamed_games):
+                self.stream_history[game_key]['dates'].append(get_date_obj(stream.date))
 
         else:
             self.stream_history[game_key] = {
@@ -141,6 +135,22 @@ class Streamer():
                 'videos': videos_contributed,
                 'dates': [get_date_obj(stream.date)]
             }
+
+
+    # goes through stream_history and returns the streams that were most recently streamed
+    # returns as a tuple (date, [list of game_ids])
+    def get_most_recent_streamed_games(self):
+        latest_date = 0
+        game_ids = []
+        for game in self.stream_history:
+            for date_obj in self.stream_history[game]['dates']:
+                if (date_obj['streamed'] > latest_date):
+                    latest_date = date_obj['streamed']
+                elif (date_obj['streamed'] == latest_date):
+                    game_ids.append(game)
+
+        return latest_date, game_ids
+
 
 
     def get_twitch_url(self):
@@ -282,7 +292,7 @@ class Streamers():
                     if (not self.__check_if_followers_same(val1, val2)):
                         return False
                 else:
-                    if (val1 != val2): 
+                    if (val1 != val2):
                         print('checkpoint m')
 
         return True
