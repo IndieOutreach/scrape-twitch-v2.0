@@ -461,152 +461,157 @@ class IGDBAPI():
 # ==============================================================================
 
 
-# Compiling Games DB -----------------------------------------------------------
+class Scraper():
 
-# scrapes games from IGDB into a Games collection
-# -> this function runs without any interaction with the Twitch API, so it will leave certain parameters blank
-#    (leaves twitch_box_art_url blank)
-# limit defaults to an equivalent to +inf. Drop it to a low int for testing purposes (only get the first X=limit games)
-# -> because of the way offset works, add 500 (size of an API result) to ensure the API returns all values up to the limit
-def compile_games_db(igdb_credentials, limit = 9999999):
-
-    igdbAPI = IGDBAPI(igdb_credentials)
-    games = Games()
-
-    # loop over all games on IGDB going in ascending order by ID
-    offset = 0
-    search_results, offset = igdbAPI.search_for_games(offset)
-    while (len(search_results) > 0 and (offset < limit + 500)):
-        for igdb_game_obj in search_results:
-            games.add_new_game(igdb_game_obj)
-
-        games.print_stats()
-        search_results, offset = igdbAPI.search_for_games(offset)
-
-    igdbAPI.request_logs.print_stats()
-    igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'games')
-    return games
+    def __init__(self, credentials):
+        self.twitchAPI = TwitchAPI(credentials['twitch'])
+        self.igdbAPI = IGDBAPI(credentials['igdb'])
+        return
 
 
-# Scrape Streamers -------------------------------------------------------------
+    # Compiling Games DB -------------------------------------------------------
 
-# scrapes all current livestreams on twitch and compiles them into a collection of Streamers
-# -> does NOT add video data to streamers because of runtime concerns
-# -> loads pre-existing streamers from /data/streamers.csv
-def compile_streamers_db(twitch_credentials, livestreams_limit = 9999999, videos_limit = 9999999):
+    # scrapes games from IGDB into a Games collection
+    # -> this function runs without any interaction with the Twitch API, so it will leave certain parameters blank
+    #    (leaves twitch_box_art_url blank)
+    # limit defaults to an equivalent to +inf. Drop it to a low int for testing purposes (only get the first X=limit games)
+    # -> because of the way offset works, add 500 (size of an API result) to ensure the API returns all values up to the limit
+    def compile_games_db(self, limit = 9999999):
 
-    twitchAPI = TwitchAPI(twitch_credentials)
-    streamers = Streamers() # <- LOAD STREAMERS FROM CSV FILE
-    streams = get_all_livestreams(twitchAPI, livestreams_limit)
+        games = Games()
 
-    # loop over livestreams to access streamers
-    # -> we can look up streamer profiles in bulk (batches of 100 IDs)
-    #    so we want to break our livestreams into batches
-    batch_num = 0
-    batches = create_batches(streams, 100)
-    for batch in batches:
+        # loop over all games on IGDB going in ascending order by ID
+        offset = 0
+        search_results, offset = self.igdbAPI.search_for_games(offset)
+        while (len(search_results) > 0 and (offset < limit + 500)):
+            for igdb_game_obj in search_results:
+                games.add_new_game(igdb_game_obj)
 
-        print("BATCH ", batch_num, " / ", len(batches))
-        batch_num += 1
+            games.print_stats()
+            search_results, offset = self.igdbAPI.search_for_games(offset)
 
-        # get a list of all streamer_ids for this batch
-        streamer_ids = []
-        stream_lookup = {}
-        for stream in batch:
-            streamer_ids.append(stream.user_id)
-            stream_lookup[stream.user_id] = stream
-
-        # search for streamer objects and create a lookup table {streamer_id -> streamer object}
-        # -> These have updated values, so we'll do our stream analysis on these and then call Streamers.update()
-        for user in twitchAPI.get_streamers(streamer_ids):
-            user_id = user['id']
-            stream = stream_lookup[user_id]
-            user['language'] = stream.language
-            streamers.add_or_update_streamer(user)
-            streamers.add_stream_data(stream_lookup[user_id])
-
-    twitchAPI.request_logs.print_stats()
-    twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers')
-    return streamers
+        self.igdbAPI.request_logs.print_stats()
+        self.igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'games')
+        return games
 
 
-# returns all livestreams up to a limit
-# -> uses a lookup table of already observed livestream IDs to make sure we know when to end
-def get_all_livestreams(twitchAPI, limit = 9999999):
+    # Scrape Streamers ---------------------------------------------------------
 
-    print('\nScraping livestreams...')
-    streams = []
-    livestreams, cursor = twitchAPI.get_livestreams()
-    livestream_ids = {}
-    old_num_livestreams = -1
-    while ((len(livestreams) > 0) and (len(streams) < limit) and (cursor != False) and (old_num_livestreams != len(livestream_ids))):
-        old_num_livestreams = len(livestream_ids)
+    # scrapes all current livestreams on twitch and compiles them into a collection of Streamers
+    # -> does NOT add video data to streamers because of runtime concerns
+    # -> loads pre-existing streamers from /data/streamers.csv
+    def compile_streamers_db(self, livestreams_limit = 9999999, videos_limit = 9999999):
 
-        for livestream in livestreams:
-            if (len(streams) < limit):
-                stream = Stream(livestream)
-                if (stream.id not in livestream_ids):
-                    streams.append(stream)
-                    livestream_ids[stream.id] = 1
+        streamers = Streamers() # <- LOAD STREAMERS FROM CSV FILE
+        streams = self.get_all_livestreams(livestreams_limit)
 
-        print("livestreams: ", len(livestream_ids))
-        livestreams, cursor = twitchAPI.get_livestreams(cursor)
-    return streams
+        # loop over livestreams to access streamers
+        # -> we can look up streamer profiles in bulk (batches of 100 IDs)
+        #    so we want to break our livestreams into batches
+        batch_num = 0
+        batches = self.create_batches(streams, 100)
+        for batch in batches:
 
+            print("BATCH ", batch_num, " / ", len(batches))
+            batch_num += 1
 
-def get_all_videos_for_streamer(twitchAPI, streamer_id, limit = 9999999):
-    all_videos = []
-    videos, cursor = twitchAPI.get_videos(streamer_id)
-    while ((len(videos) > 0) and (len(all_videos) < limit)):
-        for video in videos:
-            all_videos.append(Stream(video, False))
-        videos, cursor = twitchAPI.get_videos(streamer_id, cursor)
-    return all_videos
+            # get a list of all streamer_ids for this batch
+            streamer_ids = []
+            stream_lookup = {}
+            for stream in batch:
+                streamer_ids.append(stream.user_id)
+                stream_lookup[stream.user_id] = stream
 
-# takes in a list of items l
-# returns a list of n batch_sized lists with items distributed into batches
-# ex: given l=[1, 2, 3, 4, 5] and batch_size=2
-#    -> [ [1, 2], [3, 4], [5] ]
-def create_batches(l, batch_size):
-    new_list = []
-    i = 0
-    new_list.append([])
-    for item in l:
-        if (len(new_list[i]) >= batch_size):
-            new_list.append([])
-            i += 1
-        else:
-            new_list[i].append(item)
-    return new_list
+            # search for streamer objects and create a lookup table {streamer_id -> streamer object}
+            # -> These have updated values, so we'll do our stream analysis on these and then call Streamers.update()
+            for user in self.twitchAPI.get_streamers(streamer_ids):
+                user_id = user['id']
+                stream = stream_lookup[user_id]
+                user['language'] = stream.language
+                streamers.add_or_update_streamer(user)
+                streamers.add_stream_data(stream_lookup[user_id])
+
+        self.twitchAPI.request_logs.print_stats()
+        self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers')
+        return streamers
 
 
-# Scrape Videos ----------------------------------------------------------------
+    # returns all livestreams up to a limit
+    # -> uses a lookup table of already observed livestream IDs to make sure we know when to end
+    def get_all_livestreams(self, limit = 9999999):
 
-# .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
-# -> this function opens up the streamers DB and adds video data for streamers who are missing it
-# -> user can specify the number of streamers that get videos added in this execution
-def add_videos_to_streamers_db(twitch_credentials, filepath = './data/streamers.csv'):
+        print('\nScraping livestreams...')
+        streams = []
+        livestreams, cursor = self.twitchAPI.get_livestreams()
+        livestream_ids = {}
+        old_num_livestreams = -1
+        while ((len(livestreams) > 0) and (len(streams) < limit) and (cursor != False) and (old_num_livestreams != len(livestream_ids))):
+            old_num_livestreams = len(livestream_ids)
 
-    print(".add_videos_to_streamers_db() is a WIP")
-    return
+            for livestream in livestreams:
+                if (len(streams) < limit):
+                    stream = Stream(livestream)
+                    if (stream.id not in livestream_ids):
+                        streams.append(stream)
+                        livestream_ids[stream.id] = 1
 
-    twitchAPI = TwitchAPI(twitch_credentials)
-    streamers = Streamers(filepath)
-
-    # CODE FOR SCRAPING VIDEOS
-    #if (streamers.get(user_id) == False):
-    #    print("scraping videos for streamer_id =", user_id)
-    #    if (streamers.get(user_id) == False):
-    #        for video in get_all_videos_for_streamer(twitchAPI, user_id, videos_limit):
-    #            if (video.game_name != ""):
-    #                streamer_videos.append(video)
+            print("livestreams: ", len(livestream_ids))
+            livestreams, cursor = self.twitchAPI.get_livestreams(cursor)
+        return streams
 
 
-# Scrape Follower Counts -------------------------------------------------------
+    def get_all_videos_for_streamer(self, streamer_id, limit = 9999999):
+        all_videos = []
+        videos, cursor = self.twitchAPI.get_videos(streamer_id)
+        while ((len(videos) > 0) and (len(all_videos) < limit)):
+            for video in videos:
+                all_videos.append(Stream(video, False))
+            videos, cursor = self.twitchAPI.get_videos(streamer_id, cursor)
+        return all_videos
 
-def add_followers_to_streamers_db(twitch_credentials, filepath = './data/streamers.csv'):
-    print(".add_followers_to_streamers_db() is under construction")
-    return
+    # takes in a list of items l
+    # returns a list of n batch_sized lists with items distributed into batches
+    # ex: given l=[1, 2, 3, 4, 5] and batch_size=2
+    #    -> [ [1, 2], [3, 4], [5] ]
+    def create_batches(self, l, batch_size):
+        new_list = []
+        i = 0
+        new_list.append([])
+        for item in l:
+            if (len(new_list[i]) >= batch_size):
+                new_list.append([])
+                i += 1
+            else:
+                new_list[i].append(item)
+        return new_list
+
+
+    # Scrape Videos ------------------------------------------------------------
+
+    # .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
+    # -> this function opens up the streamers DB and adds video data for streamers who are missing it
+    # -> user can specify the number of streamers that get videos added in this execution
+    def add_videos_to_streamers_db(self, filepath = './data/streamers.csv'):
+
+        print(".add_videos_to_streamers_db() is a WIP")
+        return
+
+        streamers = Streamers(filepath)
+
+        # CODE FOR SCRAPING VIDEOS
+        #if (streamers.get(user_id) == False):
+        #    print("scraping videos for streamer_id =", user_id)
+        #    if (streamers.get(user_id) == False):
+        #        for video in get_all_videos_for_streamer(twitchAPI, user_id, videos_limit):
+        #            if (video.game_name != ""):
+        #                streamer_videos.append(video)
+
+
+    # Scrape Follower Counts ---------------------------------------------------
+
+    def add_followers_to_streamers_db(self, filepath = './data/streamers.csv'):
+        print(".add_followers_to_streamers_db() is under construction")
+        return
 
 # Main -------------------------------------------------------------------------
 
@@ -616,6 +621,7 @@ def run():
     # get secret API clientIDs
     credentials = open('credentials.json')
     credentials = json.load(credentials)
+    scraper = Scraper(credentials['twitch'], credentials['igdb'])
 
     # declare CLI arguments
     parser = argparse.ArgumentParser()
@@ -627,19 +633,19 @@ def run():
 
     # perform actions !
     if args.games:
-        igdbGames = compile_games_db(credentials['igdb'])
+        igdbGames = scraper.compile_games_db(credentials['igdb'])
         igdbGames.export_to_csv('./data/games.csv')
         igdbGames.print_stats()
 
     if args.streamers:
-        streamers = compile_streamers_db(credentials['twitch'])
+        streamers = scraper.compile_streamers_db(credentials['twitch'])
         streamers.export_to_csv('./data/streamers.csv')
 
     if args.videos:
-        add_videos_to_streamers_db()
+        scraper.add_videos_to_streamers_db()
 
     if args.followers:
-        add_followers_to_streamers_db()
+        scraper.add_followers_to_streamers_db()
 
 
 

@@ -18,9 +18,9 @@ from streamers import *
 # ==============================================================================
 
 # main function for testing the TwitchAPI class
-def test_twitch_api(clientID):
+def test_twitch_api(credentials):
 
-    twitchAPI = TwitchAPI(clientID)
+    twitchAPI = TwitchAPI(credentials['twitch'])
     test_names = [
         'games0', 'games1', 'games2', 'games3',
         'streamers0', 'streamers1', 'streamers2', 'streamers3',
@@ -150,9 +150,9 @@ def test_twitch_api(clientID):
 
 
 # main function for testing the TwitchAPI class
-def test_igdb_api(clientID):
+def test_igdb_api(credentials):
 
-    igdbAPI = IGDBAPI(clientID)
+    igdbAPI = IGDBAPI(credentials['igdb'])
     test_names = [
         'games_by_name0', 'games_by_name1', 'games_by_name2', 'games_by_name3',
         'games_by_offset0', 'games_by_offset1',
@@ -234,7 +234,7 @@ def test_igdb_api(clientID):
 # ==============================================================================
 
 
-def test_complile_games_db(clientID):
+def test_complile_games_db(credentials):
 
     test_names = [
         'compile0', 'compile1',
@@ -243,9 +243,10 @@ def test_complile_games_db(clientID):
     ]
     tests = get_empty_test(test_names)
     known_missing_indexes = [165, 315, 577, 579, 580, 581]
+    scraper = Scraper(credentials)
 
     # compile test 0: -> scrape 500 Games
-    games = scraper.compile_games_db(clientID, 500)
+    games = scraper.compile_games_db(500)
     game_ids = games.get_ids()
     if (len(game_ids) != 500):
         tests['compile0'] = False
@@ -255,7 +256,7 @@ def test_complile_games_db(clientID):
                 tests['compile0'] = False
 
     # compile test 1: -> scrape 200 games
-    games = scraper.compile_games_db(clientID, 1000)
+    games = scraper.compile_games_db(1000)
     game_ids = games.get_ids()
     if (len(game_ids) < 990):
         tests['compile1'] = False
@@ -271,7 +272,7 @@ def test_complile_games_db(clientID):
         tests['data0'] = False
 
     # data test 1: -> make sure data within a different game is actually what we are expecting
-    games = scraper.compile_games_db(clientID, 1500)
+    games = scraper.compile_games_db(1500)
     game = games.get(740) # <- this should be Halo
     if ((game == False) or (not validate_game(game, 740, "Halo: Combat Evolved"))):
         tests['data1'] = False
@@ -339,7 +340,7 @@ def validate_igdb_array(game_obj, list_name):
 
 # Unfortunately, scraping streamers is a very time intensive process because it involves scraping videos
 # therefore, these tests utilize small number of streamers
-def test_scrape_streamers(twitch_credentials, igdb_credentials):
+def test_scrape_streamers(credentials):
 
     test_names = [
         'twitch0',
@@ -348,6 +349,7 @@ def test_scrape_streamers(twitch_credentials, igdb_credentials):
     ]
     tests = get_empty_test(test_names)
 
+    scraper = Scraper(credentials)
     # twitch test 0: -> make sure that scraper.py can scrape all livestreams on Twitch
     #  - make sure that the function executes properly (average number of concurrent livestreams is < 200k)
     #twitchAPI = TwitchAPI(twitch_credentials)
@@ -355,7 +357,7 @@ def test_scrape_streamers(twitch_credentials, igdb_credentials):
     #        tests['twitch0'] = False
 
     # compile test 0: -> make sure scraped streamers have games data
-    streamers = scraper.compile_streamers_db(twitch_credentials, 5, 50)
+    streamers = scraper.compile_streamers_db(5, 50)
     streamer_ids = streamers.get_streamer_ids()
     if (len(streamer_ids) == 0):
         tests['compile0'] = False
@@ -428,7 +430,7 @@ def validate_total_views(total_views):
 # ==============================================================================
 
 # test to see if timelogs work in TwitchAPI
-def test_timelogs(twitch_credentials):
+def test_timelogs(credentials):
 
     test_names = [
         'init0', 'init1',
@@ -437,7 +439,7 @@ def test_timelogs(twitch_credentials):
     ]
     tests = get_empty_test(test_names)
 
-    twitchAPI = TwitchAPI(twitch_credentials)
+    twitchAPI = TwitchAPI(credentials['twitch'])
     test_csv_file = './test/runtime.csv'
 
     # initialize 0: -> make sure logs are initialized to be empty
@@ -536,15 +538,15 @@ def main():
 
     # tests!
     if ((len(testing) == 0) or ("Twitch API" in testing)):
-        test_twitch_api(credentials['twitch'])
+        test_twitch_api(credentials)
     if ((len(testing) == 0) or ("IGDB API" in testing)):
-        test_igdb_api(credentials['igdb'])
+        test_igdb_api(credentials)
     if ((len(testing) == 0) or ("Compile Games DB" in testing)):
-        test_complile_games_db(credentials['igdb'])
+        test_complile_games_db(credentials)
     if ((len(testing) == 0) or ("Compile Streamers DB" in testing)):
-        test_scrape_streamers(credentials['twitch'], credentials['igdb'])
+        test_scrape_streamers(credentials)
     if ((len(testing) == 0) or ("TimeLogs" in testing)):
-        test_timelogs(credentials['twitch'])
+        test_timelogs(credentials)
 
 
 # Run --------------------------------------------------------------------------

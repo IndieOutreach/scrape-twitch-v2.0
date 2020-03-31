@@ -144,14 +144,12 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- add logic so stream_history records livestreams that have already been recorded but the game_id has switche
+- Scraper is now a class that scraper.py and tests.py can call
 
 #### What is still in development? Known Issues?
-
+ - Add 'silent mode' to Scraper so tests.py can mute print statements
 
 #### What's next?
- - tests.py output is cluttered due to printing non-test info at runtime in scraper.py
-  - Convert scraper.py into a class and add a `silent_mode` feature?
  - Add scraper.add_videos_to_streamers_db()
  - Add scraper.add_followers_to_streamers_db()
   - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
