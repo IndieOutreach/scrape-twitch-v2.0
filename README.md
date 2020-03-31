@@ -146,12 +146,10 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Add scraper.add_followers_to_streamers_db()
- - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
+- add a print function to Streamers with custom logic instead of checking for self.mode == 'production' every time
 
 #### What is still in development? Known Issues?
  - Scraper.compile_streamers_db() still has a videos_limit parameter, despite no longer scraping videos
- - add a print function to Streamers with custom logic instead of checking for self.mode == 'production' every time
 
 #### What's next?
  - Add scraper.add_videos_to_streamers_db()

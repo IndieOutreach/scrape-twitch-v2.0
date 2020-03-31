@@ -488,6 +488,12 @@ class Scraper():
             self.mode = mode
 
 
+    # prints if the mode is right
+    def __print(self, message):
+        if (self.mode == 'production'):
+            print(message)
+
+
     # Compiling Games DB -------------------------------------------------------
 
     # scrapes games from IGDB into a Games collection
@@ -526,8 +532,7 @@ class Scraper():
 
         # load existing streamers
         streamers = Streamers('./data/streamers.csv') if (self.mode == 'production') else Streamers('./test/streamers.csv')
-        if (self.mode == 'production'):
-            print('Starting with ', len(streamers.get_streamer_ids()), 'streamers from CSV file')
+        self.__print('Starting with ' + str(len(streamers.get_streamer_ids())) + ' streamers from CSV file')
 
 
         # get all livestreams currently on Twitch
@@ -539,13 +544,12 @@ class Scraper():
         #    so we want to break our livestreams into batches
         batch_num = 0
         batches = self.create_batches(streams, 100)
-        for batch in batches:
+        for i in range(len(batches)):
 
-            if (self.mode == 'production'):
-                print("BATCH ", batch_num, " / ", len(batches))
-                batch_num += 1
+            self.__print("BATCH " + str(i) + " / " + str(len(batches)))
 
             # get a list of all streamer_ids for this batch
+            batch = batches[i]
             streamer_ids = []
             stream_lookup = {}
             for stream in batch:
@@ -572,8 +576,8 @@ class Scraper():
     # -> uses a lookup table of already observed livestream IDs to make sure we know when to end
     def get_all_livestreams(self, limit = 9999999):
 
-        if (self.mode == 'production'):
-            print('\nScraping livestreams...')
+        self.__print('\nScraping Livestreams...')
+
         streams = []
         livestreams, cursor = self.twitchAPI.get_livestreams()
         livestream_ids = {}
@@ -588,20 +592,11 @@ class Scraper():
                         streams.append(stream)
                         livestream_ids[stream.id] = 1
 
-            if (self.mode == 'production'):
-                print("livestreams: ", len(livestream_ids))
+            self.__print('livestreams: ' + str(len(livestream_ids)))
             livestreams, cursor = self.twitchAPI.get_livestreams(cursor)
         return streams
 
 
-    def get_all_videos_for_streamer(self, streamer_id, limit = 9999999):
-        all_videos = []
-        videos, cursor = self.twitchAPI.get_videos(streamer_id)
-        while ((len(videos) > 0) and (len(all_videos) < limit)):
-            for video in videos:
-                all_videos.append(Stream(video, False))
-            videos, cursor = self.twitchAPI.get_videos(streamer_id, cursor)
-        return all_videos
 
     # takes in a list of items l
     # returns a list of n batch_sized lists with items distributed into batches
@@ -641,6 +636,18 @@ class Scraper():
         #                streamer_videos.append(video)
 
 
+
+    def get_all_videos_for_streamer(self, streamer_id, limit = 9999999):
+        all_videos = []
+        videos, cursor = self.twitchAPI.get_videos(streamer_id)
+        while ((len(videos) > 0) and (len(all_videos) < limit)):
+            for video in videos:
+                all_videos.append(Stream(video, False))
+            videos, cursor = self.twitchAPI.get_videos(streamer_id, cursor)
+        return all_videos
+
+
+
     # Scrape Follower Counts ---------------------------------------------------
 
     # loads all the streamers from the streamers.csv file and searches for follower data for them
@@ -659,8 +666,7 @@ class Scraper():
                 return
 
             streamer_id = streamer_ids[i]
-            if (self.mode == 'production'):
-                print(i, ": ", streamer_ids[i])
+            self.__print(str(i) + ': ' + str(streamer_ids[i]))
             num_followers = self.twitchAPI.get_followers(streamer_id)
             streamers.add_follower_data(streamer_id, num_followers)
 
