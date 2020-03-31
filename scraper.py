@@ -528,7 +528,7 @@ class Scraper():
     # scrapes all current livestreams on twitch and compiles them into a collection of Streamers
     # -> does NOT add video data to streamers because of runtime concerns
     # -> loads pre-existing streamers from /data/streamers.csv
-    def compile_streamers_db(self, livestreams_limit = 9999999, videos_limit = 9999999):
+    def compile_streamers_db(self, livestreams_limit = 9999999):
 
         # load existing streamers
         streamers = Streamers('./data/streamers.csv') if (self.mode == 'production') else Streamers('./test/streamers.csv')

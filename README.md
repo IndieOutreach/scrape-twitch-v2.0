@@ -146,10 +146,9 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- add a print function to Streamers with custom logic instead of checking for self.mode == 'production' every time
+- Scraper.compile_streamers_db() still has a videos_limit parameter, despite no longer scraping videos
 
 #### What is still in development? Known Issues?
- - Scraper.compile_streamers_db() still has a videos_limit parameter, despite no longer scraping videos
 
 #### What's next?
  - Add scraper.add_videos_to_streamers_db()

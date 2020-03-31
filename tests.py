@@ -364,7 +364,7 @@ def test_scrape_streamers(credentials):
     #        tests['twitch0'] = False
 
     # compile test 0: -> make sure scraped streamers have games data
-    streamers = scraper.compile_streamers_db(5, 50)
+    streamers = scraper.compile_streamers_db(5)
     streamer_ids = streamers.get_streamer_ids()
     if (len(streamer_ids) == 0):
         tests['compile0'] = False
@@ -514,7 +514,7 @@ def test_add_followers(credentials):
 
     # followers0: -> make sure that a streamer's follower_counts increases
     # Because .add_followers_to_streamers_db() *needs* a filepath, we will create a .csv file for it to load
-    streamers1 = scraper.compile_streamers_db(5, 10)
+    streamers1 = scraper.compile_streamers_db(5)
     streamers1.export_to_csv('./test/streamers.csv')
     streamers2 = scraper.add_followers_to_streamers_db('./test/streamers.csv')
 
