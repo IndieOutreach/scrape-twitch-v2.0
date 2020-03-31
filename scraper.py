@@ -497,7 +497,7 @@ class Scraper():
     # -> because of the way offset works, add 500 (size of an API result) to ensure the API returns all values up to the limit
     def compile_games_db(self, limit = 9999999):
 
-        games = Games()
+        games = Games() # <- MODIFY THIS TO load existing games DB './data/games.csv'
 
         # loop over all games on IGDB going in ascending order by ID
         offset = 0
@@ -524,8 +524,15 @@ class Scraper():
     # -> loads pre-existing streamers from /data/streamers.csv
     def compile_streamers_db(self, livestreams_limit = 9999999, videos_limit = 9999999):
 
-        streamers = Streamers() # <- LOAD STREAMERS FROM CSV FILE
+        # load existing streamers
+        streamers = Streamers('./data/streamers.csv') if (self.mode == 'production') else Streamers('./test/streamers.csv')
+        if (self.mode == 'production'):
+            print('Starting with ', len(streamers.get_streamer_ids()), 'streamers from CSV file')
+
+
+        # get all livestreams currently on Twitch
         streams = self.get_all_livestreams(livestreams_limit)
+
 
         # loop over livestreams to access streamers
         # -> we can look up streamer profiles in bulk (batches of 100 IDs)
@@ -673,7 +680,7 @@ def run():
         scraper.add_videos_to_streamers_db()
 
     if args.followers:
-        scraper.add_followers_to_streamers_db()
+        scraper.add_followers_to_streamers_db('./data/streamers.csv')
 
 
 

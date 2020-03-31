@@ -146,14 +146,14 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Add `num_items` parameter to TimeLogs.export_to_csv() so the number of items at the end of each procedure (# of streamers, # games, etc) is recorded
+ - Streamers and Games now have a Try/Except on opening their respective .csv files 
 
 #### What is still in development? Known Issues?
 
 #### What's next?
- - Add scraper.add_videos_to_streamers_db()
  - Add scraper.add_followers_to_streamers_db()
   - convert streamer.num_followers into a list of follower counts [ {'date', 'followers'}, ... ]
+ - Add scraper.add_videos_to_streamers_db()
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 
 

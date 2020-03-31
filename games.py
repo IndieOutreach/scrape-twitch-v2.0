@@ -146,13 +146,16 @@ class Games():
 
     def load_from_csv(self, filename):
         filename = filename if ('.csv' in filename) else filename + '.csv'
-        with open(filename) as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                game = Game(row, True)
-                self.games[game.id] = game
+        try:
+            with open(filename) as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    game = Game(row, True)
+                    self.games[game.id] = game
 
-
+        except IOError:
+            print(filename, "does not exist yet")
+            
     # Data Validation ----------------------------------------------------------
 
     # compares this Games object with another Games object

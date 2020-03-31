@@ -234,12 +234,14 @@ class Streamers():
 
     def load_from_csv(self, filename):
         filename = filename if ('.csv' in filename) else filename + '.csv'
-        with open(filename) as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                streamer = Streamer(row, True)
-                self.streamers[streamer.id] = streamer
-
+        try:
+            with open(filename) as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    streamer = Streamer(row, True)
+                    self.streamers[streamer.id] = streamer
+        except IOError:
+            print(filename, "does not exist yet")
 
     # Data Validation ----------------------------------------------------------
 
