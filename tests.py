@@ -20,6 +20,7 @@ from streamers import *
 # main function for testing the TwitchAPI class
 def test_twitch_api(credentials):
 
+    print_test_title("TwitchAPI")
     twitchAPI = TwitchAPI(credentials['twitch'])
     test_names = [
         'games0', 'games1', 'games2', 'games3',
@@ -141,7 +142,7 @@ def test_twitch_api(credentials):
         tests['videos4'] = False
 
 
-    print_test_results("TwitchAPI", tests)
+    print_test_results(tests)
 
 
 # ==============================================================================
@@ -152,6 +153,7 @@ def test_twitch_api(credentials):
 # main function for testing the TwitchAPI class
 def test_igdb_api(credentials):
 
+    print_test_title("IGDB API")
     igdbAPI = IGDBAPI(credentials['igdb'])
     test_names = [
         'games_by_name0', 'games_by_name1', 'games_by_name2', 'games_by_name3',
@@ -226,7 +228,7 @@ def test_igdb_api(credentials):
         if (('igdb_box_art_url' not in game) or ('images.igdb.com' not in game['igdb_box_art_url'])):
             tests['game_covers4'] = False
 
-    print_test_results("IGDB API", tests)
+    print_test_results(tests)
 
 
 # ==============================================================================
@@ -236,6 +238,7 @@ def test_igdb_api(credentials):
 
 def test_complile_games_db(credentials):
 
+    print_test_title("Compile Games DB")
     test_names = [
         'compile0', 'compile1',
         'data0', 'data1',
@@ -244,6 +247,7 @@ def test_complile_games_db(credentials):
     tests = get_empty_test(test_names)
     known_missing_indexes = [165, 315, 577, 579, 580, 581]
     scraper = Scraper(credentials)
+    scraper.set_mode('testing')
 
     # compile test 0: -> scrape 500 Games
     games = scraper.compile_games_db(500)
@@ -287,7 +291,7 @@ def test_complile_games_db(credentials):
         tests['load0'] = False
 
 
-    print_test_results("Compile Games DB", tests)
+    print_test_results(tests)
 
 
 # makes sure that a Game has the right types on its attributes
@@ -342,6 +346,7 @@ def validate_igdb_array(game_obj, list_name):
 # therefore, these tests utilize small number of streamers
 def test_scrape_streamers(credentials):
 
+    print_test_title("Scrape Streamers")
     test_names = [
         'twitch0',
         'compile0',
@@ -350,6 +355,7 @@ def test_scrape_streamers(credentials):
     tests = get_empty_test(test_names)
 
     scraper = Scraper(credentials)
+    scraper.set_mode('testing')
     # twitch test 0: -> make sure that scraper.py can scrape all livestreams on Twitch
     #  - make sure that the function executes properly (average number of concurrent livestreams is < 200k)
     #twitchAPI = TwitchAPI(twitch_credentials)
@@ -377,7 +383,7 @@ def test_scrape_streamers(credentials):
     if (not streamers.check_if_streamer_collection_same(new_streamers)):
         tests['load0'] = False
 
-    print_test_results("Scrape Streamers", tests)
+    print_test_results(tests)
 
 
 # returns true if streamer has all the right attributes to have been scraped correctly
@@ -432,6 +438,8 @@ def validate_total_views(total_views):
 # test to see if timelogs work in TwitchAPI
 def test_timelogs(credentials):
 
+    print_test_title("TimeLogs")
+
     test_names = [
         'init0', 'init1',
         'run0', 'run1', 'run2',
@@ -485,8 +493,7 @@ def test_timelogs(credentials):
             tests['save0'] = False
 
 
-    print_test_results("TimeLogs", tests)
-    twitchAPI.request_logs.print_stats()
+    print_test_results(tests)
 
 
 # ==============================================================================
@@ -495,11 +502,15 @@ def test_timelogs(credentials):
 
 # Helper Functions -------------------------------------------------------------
 
-# prints out the results of a suite of tests
-def print_test_results(title, tests):
-    print("------------------------------")
+def print_test_title(title):
+    print("==============================")
     print("Tests: ", title)
-    print("------------------------------")
+    print("==============================")
+
+
+# prints out the results of a suite of tests
+def print_test_results( tests):
+
     correct = 0
     n = 0
     for key, value in tests.items():
@@ -512,7 +523,6 @@ def print_test_results(title, tests):
 
     print("-")
     print("Results: ", correct, "/", n, "(", round(correct / n * 100, 1), "%) correct")
-    print("------------------------------")
     print("")
 
 # given a list of names of tests, returns a dict with all {test_name: True}

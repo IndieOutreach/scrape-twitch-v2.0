@@ -144,10 +144,9 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Scraper is now a class that scraper.py and tests.py can call
+- Scraper now has 'testing' mode which mutes print statements
 
 #### What is still in development? Known Issues?
- - Add 'silent mode' to Scraper so tests.py can mute print statements
 
 #### What's next?
  - Add scraper.add_videos_to_streamers_db()

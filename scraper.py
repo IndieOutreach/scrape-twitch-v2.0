@@ -383,6 +383,10 @@ class IGDBAPI():
                 if (game_id in covers):
                     game['igdb_box_art_url'] = covers[game_id]
                 games.append(game)
+        else:
+            print('Error in IGDBAPI.search_for_game_by_name()')
+            print(r.status_code)
+            print(r.text)
 
         self.request_logs.end_action('search_for_game_by_name')
         if (result_as_array == True):
@@ -416,6 +420,10 @@ class IGDBAPI():
                 game_id = int(game['id'])
                 game['igdb_box_art_url'] = game_covers[game_id] if (game_id in game_covers) else ""
                 games.append(game)
+        else:
+            print('Error in IGDBAPI.search_for_games()')
+            print(r.status_code)
+            print(r.text)
 
         self.request_logs.end_action('search_for_games')
         return games, offset + 500
@@ -452,7 +460,10 @@ class IGDBAPI():
             for id in covers_by_game:
                 covers_by_game[id] = 'https:' + covers_by_game[id]['url']
 
-
+        else:
+            print('Error in IGDBAPI.search_for_game_covers')
+            print(r.status_code)
+            print(r.text)
         self.request_logs.end_action('search_for_game_covers')
         return covers_by_game
 
@@ -466,7 +477,13 @@ class Scraper():
     def __init__(self, credentials):
         self.twitchAPI = TwitchAPI(credentials['twitch'])
         self.igdbAPI = IGDBAPI(credentials['igdb'])
+        self.mode = 'production' # <- determines print statements
         return
+
+    # lets user activate a different mode
+    def set_mode(self, mode):
+        if (mode in ['production', 'testing']):
+            self.mode = mode
 
 
     # Compiling Games DB -------------------------------------------------------
@@ -487,11 +504,13 @@ class Scraper():
             for igdb_game_obj in search_results:
                 games.add_new_game(igdb_game_obj)
 
-            games.print_stats()
+            if (self.mode == 'production'):
+                games.print_stats()
             search_results, offset = self.igdbAPI.search_for_games(offset)
 
-        self.igdbAPI.request_logs.print_stats()
-        self.igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'games')
+        if (self.mode == 'production'):
+            self.igdbAPI.request_logs.print_stats()
+            self.igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'games')
         return games
 
 
@@ -531,8 +550,9 @@ class Scraper():
                 streamers.add_or_update_streamer(user)
                 streamers.add_stream_data(stream_lookup[user_id])
 
-        self.twitchAPI.request_logs.print_stats()
-        self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers')
+        if (self.mode == 'production'):
+            self.twitchAPI.request_logs.print_stats()
+            self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers')
         return streamers
 
 
@@ -555,7 +575,8 @@ class Scraper():
                         streams.append(stream)
                         livestream_ids[stream.id] = 1
 
-            print("livestreams: ", len(livestream_ids))
+            if (self.mode == 'production'):
+                print("livestreams: ", len(livestream_ids))
             livestreams, cursor = self.twitchAPI.get_livestreams(cursor)
         return streams
 
@@ -613,15 +634,18 @@ class Scraper():
         print(".add_followers_to_streamers_db() is under construction")
         return
 
-# Main -------------------------------------------------------------------------
+
+
+# ==============================================================================
+# RUN
+# ==============================================================================
 
 # Run the main scraper
 def run():
 
     # get secret API clientIDs
     credentials = open('credentials.json')
-    credentials = json.load(credentials)
-    scraper = Scraper(credentials['twitch'], credentials['igdb'])
+    scraper = Scraper(json.load(credentials))
 
     # declare CLI arguments
     parser = argparse.ArgumentParser()
@@ -633,12 +657,12 @@ def run():
 
     # perform actions !
     if args.games:
-        igdbGames = scraper.compile_games_db(credentials['igdb'])
+        igdbGames = scraper.compile_games_db()
         igdbGames.export_to_csv('./data/games.csv')
         igdbGames.print_stats()
 
     if args.streamers:
-        streamers = scraper.compile_streamers_db(credentials['twitch'])
+        streamers = scraper.compile_streamers_db()
         streamers.export_to_csv('./data/streamers.csv')
 
     if args.videos:
