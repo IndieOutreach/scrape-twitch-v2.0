@@ -480,14 +480,14 @@ def test_timelogs(credentials):
             tests['run2'] = False
 
     # save 0: -> save to CSV file
-    twitchAPI.request_logs.export_to_csv(test_csv_file, 'test1')
+    twitchAPI.request_logs.export_to_csv(test_csv_file, 'test1', len(livestreams))
     content = twitchAPI.request_logs.load_from_csv(test_csv_file)
     if (len(content) == 0):
         tests['save0'] = False
     else:
         old_length = len(content)
         twitchAPI.get_livestreams()
-        twitchAPI.request_logs.export_to_csv(test_csv_file, 'test2')
+        twitchAPI.request_logs.export_to_csv(test_csv_file, 'test2', len(livestreams))
         content = twitchAPI.request_logs.load_from_csv(test_csv_file)
         if (len(content) <= old_length):
             tests['save0'] = False

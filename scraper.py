@@ -93,7 +93,8 @@ class TimeLogs():
     def get_stats_from_logs(self):
         stats = {}
         for action_category, actions in self.logs.items():
-            stats[action_category] =  self.__calc_stats_about_action(actions)
+            if (len(actions) > 0):
+                stats[action_category] = self.__calc_stats_about_action(actions)
         return stats
 
     def __calc_stats_about_action(self, actions):
@@ -147,18 +148,19 @@ class TimeLogs():
 
     # NOTE: TimeLogs is an individual log entry.
     # -> In order to save and not overwrite previous logs, need to load them as an array and add current TimeLog to the end
-    def export_to_csv(self, filename, content_type):
+    def export_to_csv(self, filename, content_type, num_items):
         # get content ready
         content = self.load_from_csv(filename)
         content.append({
             'time_started': self.time_initialized,
             'time_ended': self.__get_current_time(),
             'content_type': content_type,
-            'logs': self.get_stats_from_logs()
+            'logs': self.get_stats_from_logs(),
+            'num_items': num_items
         })
 
         # write file
-        fieldnames = ['time_started', 'time_ended', 'content_type', 'logs']
+        fieldnames = ['time_started', 'time_ended', 'content_type', 'num_items', 'logs']
         filename = filename if ('.csv' in filename) else filename + '.csv'
         with open(filename, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -510,7 +512,8 @@ class Scraper():
 
         if (self.mode == 'production'):
             self.igdbAPI.request_logs.print_stats()
-            self.igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'games')
+            num_games = len(games.get_ids())
+            self.igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'games', num_games)
         return games
 
 
@@ -552,7 +555,8 @@ class Scraper():
 
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()
-            self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers')
+            num_streamers = len(streamers.get_streamer_ids())
+            self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers', num_streamers)
         return streamers
 
 

@@ -138,13 +138,15 @@ Keeps track of actions and requests made by scraper.py
  - `time_ended` - the unix epoch date (in milleseconds) that the procedure ended on
  - `content_type` - The type of content that was scraped during procedure
   - Value is a string from list ['streamers', 'games', 'followers', 'videos']
+ - `num_items` - number of items of content_type that the program ended with
+  - you can use this value over time to see how the dataset grows
  - `logs` - an object with the stats about the procedure's runtime
   - of form: `{ action_type: {'n': NUM_REQUESTS, 'total': TOTAL_TIME_TAKEN, 'mean': MEAN_TIME_PER_REQUEST, 'std_dev': STD_DEV_OF_TIME_PER_REQUEST, 'min': MIN_TIME_FOR_A_REQUEST, 'max': MAX_TIME_FOR_A_REQUEST, 'first_start': UNIX_EPOCH_TIMESTAMP_OF_WHEN_FIRST_REQUEST_STARTED, 'last_end': UNIX_EPOCH_TIMESTAMP_OF_WHEN_LAST_REQUEST_ENDED}, ... }`
 
 ## Development Notes
 
 #### What is new in this commit?
-- Scraper now has 'testing' mode which mutes print statements
+- Add `num_items` parameter to TimeLogs.export_to_csv() so the number of items at the end of each procedure (# of streamers, # games, etc) is recorded
 
 #### What is still in development? Known Issues?
 
