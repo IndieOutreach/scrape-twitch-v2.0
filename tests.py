@@ -248,6 +248,8 @@ def test_complile_games_db(credentials):
     known_missing_indexes = [165, 315, 577, 579, 580, 581]
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
+    filename = './test/games.csv'
+    wipe_file(filename)
 
     # compile test 0: -> scrape 500 Games
     games = scraper.compile_games_db(500)
@@ -283,8 +285,8 @@ def test_complile_games_db(credentials):
 
 
     # load test 0: -> save data to .CSV, load it back into memory, and check if its the same
-    games.export_to_csv('./test/games.csv')
-    new_games = Games('./test/games.csv')
+    games.export_to_csv(filename)
+    new_games = Games(filename)
     if (not games.check_if_game_collections_same(new_games)):
         tests['load0'] = False
     elif (not validate_game(games.get(740), 740, "Halo: Combat Evolved")):
@@ -357,6 +359,9 @@ def test_scrape_streamers(credentials):
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
 
+    filename = './test/streamers.csv'
+    wipe_file(filename)
+
     # twitch test 0: -> make sure that scraper.py can scrape all livestreams on Twitch
     #  - make sure that the function executes properly (average number of concurrent livestreams is < 200k)
     #twitchAPI = TwitchAPI(twitch_credentials)
@@ -379,8 +384,8 @@ def test_scrape_streamers(credentials):
 
 
     # load 0: -> save the streamers to a CSV file and re-load it to make sure saving/loading works
-    streamers.export_to_csv('./test/streamers.csv')
-    new_streamers = Streamers('./test/streamers.csv')
+    streamers.export_to_csv(filename)
+    new_streamers = Streamers(filename)
     if (not streamers.check_if_streamer_collection_same(new_streamers)):
         tests['load0'] = False
 
@@ -450,6 +455,7 @@ def test_timelogs(credentials):
 
     twitchAPI = TwitchAPI(credentials['twitch'])
     test_csv_file = './test/runtime.csv'
+    wipe_file(test_csv_file)
 
     # initialize 0: -> make sure logs are initialized to be empty
     for key, value in twitchAPI.request_logs.logs.items():
@@ -511,12 +517,14 @@ def test_add_followers(credentials):
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
 
+    filename = './test/streamers.csv'
+    wipe_file(filename)
 
     # followers0: -> make sure that a streamer's follower_counts increases
     # Because .add_followers_to_streamers_db() *needs* a filepath, we will create a .csv file for it to load
     streamers1 = scraper.compile_streamers_db(5)
-    streamers1.export_to_csv('./test/streamers.csv')
-    streamers2 = scraper.add_followers_to_streamers_db('./test/streamers.csv')
+    streamers1.export_to_csv(filename)
+    streamers2 = scraper.add_followers_to_streamers_db(filename)
 
     for id in streamers1.get_streamer_ids():
         if (id not in streamers2.get_streamer_ids()):
@@ -560,11 +568,13 @@ def test_add_videos(credentials):
 
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
+    filename = './test/streamers_videos.csv'
+    wipe_file(filename)
 
     # videos0: -> scrape videos and check streamer objects
     streamers1 = scraper.compile_streamers_db(5)
-    streamers1.export_to_csv('./test/streamers_videos.csv')
-    streamers2 = scraper.add_videos_to_streamers_db('./test/streamers_videos.csv', 15)
+    streamers1.export_to_csv(filename)
+    streamers2 = scraper.add_videos_to_streamers_db(filename, 15)
     num_streamers_without_videos = 0
     for streamer_id in streamers1.get_streamer_ids():
         streamer1 = streamers1.get(streamer_id)
@@ -620,6 +630,14 @@ def get_empty_test(test_names):
     for name in test_names:
         test[name] = True
     return test
+
+# overwrites any existing file at filename
+# -> use this at the beginning of each test to make sure no other data interferes
+def wipe_file(filename):
+    s = Streamers()
+    s.export_to_csv(filename)
+    return
+
 
 # Main -------------------------------------------------------------------------
 

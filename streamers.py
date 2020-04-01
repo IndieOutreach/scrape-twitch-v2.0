@@ -220,6 +220,10 @@ class Streamers():
         if (filename):
             self.load_from_csv(filename)
 
+    # sets streamers to be empty, effectively wiping the Streamers object
+    def reset(self):
+        self.streamers = {}
+
     # get ----------------------------------------------------------------------
 
     # returns a specified streamer

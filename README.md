@@ -149,11 +149,10 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- keep track of views contributed by the last stream so Streamer can replace a view count if number goes up
+- Because Streamers() will now load pre-existing files, tests.py now wipes .csv files before running tests
 
 
 #### What is still in development? Known Issues?
- - Because Streamers() will now load pre-existing files, tests.py needs a function to wipe Streamers contents
  - Add ability to register various .csv file locations in Scraper so they aren't hardcoded in functions
   - move all export_to_csv calls into Scraper under production mode
  - add streamers.get_streamer_ids_with_missing_follower_data()
