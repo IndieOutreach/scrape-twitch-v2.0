@@ -149,8 +149,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add ability to register various .csv file locations in Scraper so they aren't hardcoded in functions
-  - move all export_to_csv calls into Scraper under production mode
+ - Add explicit printing setting to Scrapers, decoupling it from 'production' mode
 
 #### What is still in development? Known Issues?
  - add streamers.get_streamer_ids_with_missing_follower_data()
@@ -159,8 +158,8 @@ Keeps track of actions and requests made by scraper.py
 
 
 #### What's next?
+ - Create insights.py for drawing insights from streamers.csv data
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
- - Add 'verbose' option to Scraper and use that for print statements instead of 'mode==production'
 
 #### Future Roadmap
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)
@@ -169,5 +168,4 @@ Keeps track of actions and requests made by scraper.py
  - convert tests.py to use argparse for consistency
  - move TimeLogs over to its own file timelogs.py and add functions for calculating stats from those logs
  - Add `reset_logs` function to Scraper so you can re-use the same Scraper instance between different scraping procedures and not double-up on log data
- - Create insights.py for drawing insights from streamers.csv data
  - Build controller for scraping in production - maybe a server that dispatches requests to threads?

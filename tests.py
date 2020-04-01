@@ -248,6 +248,7 @@ def test_complile_games_db(credentials):
     known_missing_indexes = [165, 315, 577, 579, 580, 581]
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
+    scraper.set_print_mode(False)
     filename = './test/games.csv'
     wipe_file(filename)
 
@@ -358,6 +359,7 @@ def test_scrape_streamers(credentials):
 
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
+    scraper.set_print_mode(False)
 
     filename = './test/streamers.csv'
     wipe_file(filename)
@@ -516,6 +518,7 @@ def test_add_followers(credentials):
 
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
+    scraper.set_print_mode(False)
 
     filename = './test/streamers.csv'
     wipe_file(filename)
@@ -568,6 +571,8 @@ def test_add_videos(credentials):
 
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
+    scraper.set_print_mode(False)
+    
     filename = './test/streamers_videos.csv'
     wipe_file(filename)
 

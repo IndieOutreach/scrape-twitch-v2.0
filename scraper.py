@@ -485,7 +485,8 @@ class Scraper():
     def __init__(self, credentials):
         self.twitchAPI = TwitchAPI(credentials['twitch'])
         self.igdbAPI = IGDBAPI(credentials['igdb'])
-        self.mode = 'production' # <- determines print statements
+        self.mode = 'production' # <- this is either 'production' or 'testing'
+        self.print_mode_on = True
         self.filepaths = {
             'games': './data/games.csv',
             'streamers': './data/streamers.csv',
@@ -501,9 +502,12 @@ class Scraper():
 
     # prints if the mode is right
     def __print(self, message):
-        if (self.mode == 'production'):
+        if (self.print_mode_on):
             print(message)
 
+    def set_print_mode(self, print_mode):
+        self.print_mode_on = print_mode
+        
     # updates which files Scraper points at
     def update_filepaths(filetype, filepath):
         self.filepaths[filetype] = filepath
