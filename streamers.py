@@ -129,14 +129,27 @@ class Streamer():
 
 
         if (game_key in self.stream_history):
+
             self.stream_history[game_key]['videos'] += videos_contributed
-            self.stream_history[game_key]['views'] += views_contributed
+
+            # if the current stream has *just* switched over to this stream, record its views
             if (game_key not in recent_streamed_games):
                 self.stream_history[game_key]['dates'].append(get_date_obj(stream.date))
+                self.stream_history[game_key]['recent'] = views_contributed
+                self.stream_history[game_key]['views'] += views_contributed
+            else:
+                # if we have already recorded the current stream with this game,
+                # -> we only want to update the views contributed if its greater than last time
+                if (self.stream_history[game_key]['recent'] < views_contributed):
+                    self.stream_history[game_key]['views'] -= self.stream_history[game_key]['recent']
+                    self.stream_history[game_key]['views'] += views_contributed
+                    self.stream_history[game_key]['recent'] = views_contributed
+
 
         else:
             self.stream_history[game_key] = {
                 'views': views_contributed,
+                'recent': views_contributed,
                 'videos': videos_contributed,
                 'dates': [get_date_obj(stream.date)]
             }
