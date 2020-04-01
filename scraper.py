@@ -485,20 +485,26 @@ class Scraper():
     def __init__(self, credentials):
         self.twitchAPI = TwitchAPI(credentials['twitch'])
         self.igdbAPI = IGDBAPI(credentials['igdb'])
-        self.mode = 'production' # <- this is either 'production' or 'testing'
         self.print_mode_on = True
-        self.filepaths = {
-            'games': './data/games.csv',
-            'streamers': './data/streamers.csv',
-            'logs': './logs/runtime.csv'
-        }
+        self.set_mode('production')
         return
 
     # lets user activate a different mode
     def set_mode(self, mode):
-        if (mode in ['production', 'testing']):
-            self.mode = mode
-
+        if (mode == 'production'):
+            self.mode = 'production'
+            self.filepaths = {
+                'games': './data/games.csv',
+                'streamers': './data/streamers.csv',
+                'logs': './logs/runtime.csv'
+            }
+        elif (mode == 'testing'):
+            self.mode = 'testing'
+            self.filepaths = {
+                'games': './test/games.csv',
+                'streamers': './test/streamers.csv',
+                'logs': './test/runtime.csv'
+            }
 
     # prints if the mode is right
     def __print(self, message):
@@ -550,7 +556,7 @@ class Scraper():
     def compile_streamers_db(self, livestreams_limit = 9999999):
 
         # load existing streamers
-        streamers = Streamers('./data/streamers.csv') if (self.mode == 'production') else Streamers('./test/streamers.csv')
+        streamers = Streamers(self.filepaths['streamers'])
         self.__print('Starting with ' + str(len(streamers.get_streamer_ids())) + ' streamers from CSV file')
 
 
@@ -640,16 +646,16 @@ class Scraper():
     # .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
     # -> this function opens up the streamers DB and adds video data for streamers who are missing it
     # -> user can specify the number of streamers that get videos added in this execution
-    def add_videos_to_streamers_db(self, filepath = './data/streamers.csv', video_limit = 9999999, streamer_limit = 9999999):
+    def add_videos_to_streamers_db(self, video_limit = 9999999, streamer_limit = 9999999):
 
-        streamers = Streamers(filepath)
+        streamers = Streamers(self.filepaths['streamers'])
         streamer_ids = streamers.get_streamers_ids_with_no_video_data()
 
         if (len(streamer_ids) == 0):
             return
 
         streamers_to_scrape = streamer_limit if (len(streamer_ids) > streamer_limit) else len(streamer_ids)
-        self.__print('scraping videos for ' + str(streamers_to_scrape) + ' streamers')
+        self.__print('scraping videos for ' + str(streamers_to_scrape) + ' streamers (out of ' + str(len(streamer_ids)) + ' possible)')
 
 
         for i in range(streamers_to_scrape):
@@ -687,9 +693,9 @@ class Scraper():
     # Scrape Follower Counts ---------------------------------------------------
 
     # loads all the streamers from the streamers.csv file and searches for follower data for them
-    def add_followers_to_streamers_db(self, filepath = './data/streamers.csv', limit = 9999999):
+    def add_followers_to_streamers_db(self, limit = 9999999):
 
-        streamers = Streamers(filepath)
+        streamers = Streamers(self.filepaths['streamers'])
         streamer_ids = streamers.get_streamer_ids_with_missing_follower_data()
 
         # we can't add followers if there are no streamer profiles to add to
@@ -746,11 +752,11 @@ def run():
         scraper.compile_streamers_db()
     if args.videos:
         if (args.videos == -1):
-            scraper.add_videos_to_streamers_db('./data/streamers.csv')
+            scraper.add_videos_to_streamers_db()
         else:
-            scraper.add_videos_to_streamers_db('./data/streamers.csv', 9999999, args.videos)
+            scraper.add_videos_to_streamers_db(9999999, args.videos)
     if args.followers:
-        scraper.add_followers_to_streamers_db('./data/streamers.csv', args.followers)
+        scraper.add_followers_to_streamers_db(args.followers)
 
 
 

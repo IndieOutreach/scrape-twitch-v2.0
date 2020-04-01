@@ -528,7 +528,7 @@ def test_add_followers(credentials):
     streamers1 = scraper.compile_streamers_db(5)
     num_missing1 = len(streamers1.get_streamer_ids_with_missing_follower_data())
     streamers1.export_to_csv(filename)
-    streamers2 = scraper.add_followers_to_streamers_db(filename)
+    streamers2 = scraper.add_followers_to_streamers_db()
 
     for id in streamers1.get_streamer_ids():
         if (id not in streamers2.get_streamer_ids()):
@@ -579,13 +579,13 @@ def test_add_videos(credentials):
     scraper.set_mode('testing')
     scraper.set_print_mode(False)
 
-    filename = './test/streamers_videos.csv'
+    filename = './test/streamers.csv'
     wipe_file(filename)
 
     # videos0: -> scrape videos and check streamer objects
     streamers1 = scraper.compile_streamers_db(5)
     streamers1.export_to_csv(filename)
-    streamers2 = scraper.add_videos_to_streamers_db(filename, 15)
+    streamers2 = scraper.add_videos_to_streamers_db(15)
     num_streamers_without_videos = 0
     for streamer_id in streamers1.get_streamer_ids():
         streamer1 = streamers1.get(streamer_id)
