@@ -288,7 +288,13 @@ class TwitchAPI():
     def get_videos(self, streamer_id, previous_cursor = False, quantity = '100'):
         self.request_logs.start_action('get_videos')
         videos = []
+
+        # quantity should be an int with value <= 100 and converted into a string
+        quantity = int(quantity)
+        quantity = quantity if (quantity <= 100) else 100
         quantity = str(quantity) if (isinstance(quantity, int)) else quantity
+
+
         params = {'user_id': streamer_id, 'first': quantity}
         if (previous_cursor != False):
             params['after'] = previous_cursor
@@ -620,30 +626,48 @@ class Scraper():
     # .compile_streamers_db() doesn't add video data to streamer profiles because that would take too long
     # -> this function opens up the streamers DB and adds video data for streamers who are missing it
     # -> user can specify the number of streamers that get videos added in this execution
-    def add_videos_to_streamers_db(self, filepath = './data/streamers.csv'):
-
-        print(".add_videos_to_streamers_db() is a WIP")
-        return
+    def add_videos_to_streamers_db(self, filepath = './data/streamers.csv', video_limit = 9999999, streamer_limit = 9999999):
 
         streamers = Streamers(filepath)
+        streamer_ids = streamers.get_streamers_ids_with_no_video_data()
 
-        # CODE FOR SCRAPING VIDEOS
-        #if (streamers.get(user_id) == False):
-        #    print("scraping videos for streamer_id =", user_id)
-        #    if (streamers.get(user_id) == False):
-        #        for video in get_all_videos_for_streamer(twitchAPI, user_id, videos_limit):
-        #            if (video.game_name != ""):
-        #                streamer_videos.append(video)
+        if (len(streamer_ids) == 0):
+            return
+
+        streamers_to_scrape = streamer_limit if (len(streamer_ids) > streamer_limit) else len(streamer_ids)
+        self.__print('scraping videos for ' + str(streamers_to_scrape) + ' streamers')
+
+
+        for i in range(len(streamer_ids)):
+            if (i > streamer_limit):
+                return streamers
+
+            streamer_id = streamer_ids[i]
+            videos = self.get_all_videos_for_streamer(streamer_id, video_limit)
+            self.__print(str(i) + ': streamer=' + str(streamer_id) + ', #videos=' + str(len(videos)))
+            for video in videos:
+                streamers.add_stream_data(video)
+
+
+        if (self.mode == 'production'):
+            self.twitchAPI.request_logs.print_stats()
+            num_streamers = streamer_limit if (len(streamer_ids) > streamer_limit) else len(streamer_ids)
+            self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'videos', num_streamers)
+        return streamers
+
 
 
 
     def get_all_videos_for_streamer(self, streamer_id, limit = 9999999):
         all_videos = []
-        videos, cursor = self.twitchAPI.get_videos(streamer_id)
+        videos, cursor = self.twitchAPI.get_videos(streamer_id, False, limit)
         while ((len(videos) > 0) and (len(all_videos) < limit)):
             for video in videos:
-                all_videos.append(Stream(video, False))
-            videos, cursor = self.twitchAPI.get_videos(streamer_id, cursor)
+                if (len(all_videos) < limit):
+                    all_videos.append(Stream(video, False))
+
+            quantity_to_request = limit - len(all_videos)
+            videos, cursor = self.twitchAPI.get_videos(streamer_id, cursor, quantity_to_request)
         return all_videos
 
 
@@ -651,19 +675,19 @@ class Scraper():
     # Scrape Follower Counts ---------------------------------------------------
 
     # loads all the streamers from the streamers.csv file and searches for follower data for them
-    def add_followers_to_streamers_db(self, filepath = './data/streamers.csv', limit=9999999):
+    def add_followers_to_streamers_db(self, filepath = './data/streamers.csv'):
 
         streamers = Streamers(filepath)
         streamer_ids = streamers.get_streamer_ids()
 
         # we can't add followers if there are no streamer profiles to add to
         if (len(streamer_ids) == 0):
-            return
+            return streamers
 
         # iterate over each streamer object and add a followers count to their profile
         for i in range(len(streamer_ids)):
-            if (i > limit):
-                return
+            if ((self.mode == 'testing') and (i > 10)):
+                return streamers
 
             streamer_id = streamer_ids[i]
             self.__print(str(i) + ': ' + str(streamer_ids[i]))
@@ -709,7 +733,10 @@ def run():
         streamers.export_to_csv('./data/streamers.csv')
 
     if args.videos:
-        scraper.add_videos_to_streamers_db()
+        if (args.videos == -1):
+            scraper.add_videos_to_streamers_db('./data/streamers.csv')
+        else:
+            scraper.add_videos_to_streamers_db('./data/streamers.csv', 9999999, args.videos)
 
     if args.followers:
         scraper.add_followers_to_streamers_db('./data/streamers.csv')

@@ -142,6 +142,8 @@ class Streamer():
             }
 
 
+    # Get ----------------------------------------------------------------------
+
     # goes through stream_history and returns the streams that were most recently streamed
     # returns as a tuple (date, [list of game_ids])
     def get_most_recent_streamed_games(self):
@@ -156,6 +158,16 @@ class Streamer():
 
         return latest_date, game_ids
 
+
+    # returns a tuple ([list of games in livestreams], [list of games in videos])
+    def get_games_played(self):
+        livestreams, videos = [], []
+        for game in self.stream_history:
+            if (isinstance(game, int)):
+                livestreams.append(game)
+            else:
+                videos.append(game)
+        return livestreams, videos
 
 
     def get_twitch_url(self):
@@ -208,6 +220,15 @@ class Streamers():
     def get_streamer_ids(self):
         ids = list(self.streamers.keys())
         ids.sort()
+        return ids
+
+    # returns a list of streamer IDs that do not have any streamer data on record
+    def get_streamers_ids_with_no_video_data(self):
+        ids = []
+        for id, streamer in self.streamers.items():
+            livestreamed_games, video_games = streamer.get_games_played()
+            if (len(video_games) == 0):
+                ids.append(id)
         return ids
 
     # insert -------------------------------------------------------------------

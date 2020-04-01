@@ -547,6 +547,42 @@ def validate_follower_counts(counts):
 
     return True
 
+# ==============================================================================
+# Test Add Videos
+# ==============================================================================
+
+def test_add_videos(credentials):
+    print_test_title("Add Videos")
+    test_names = [
+        'videos0', 'videos1'
+    ]
+    tests = get_empty_test(test_names)
+
+    scraper = Scraper(credentials)
+    scraper.set_mode('testing')
+
+    # videos0: -> scrape videos and check streamer objects
+    streamers1 = scraper.compile_streamers_db(5)
+    streamers1.export_to_csv('./test/streamers_videos.csv')
+    streamers2 = scraper.add_videos_to_streamers_db('./test/streamers_videos.csv', 15)
+    num_streamers_without_videos = 0
+    for streamer_id in streamers1.get_streamer_ids():
+        streamer1 = streamers1.get(streamer_id)
+        streamer2 = streamers2.get(streamer_id)
+
+        if (len(streamer2.stream_history) <= len(streamer1.stream_history)):
+            num_streamers_without_videos += 1
+
+    if (num_streamers_without_videos >= 5):
+        tests['videos0'] = False
+
+    # videos1: -> make sure scraping videos decreases the number of streamers eligible to have their videos scraped
+    old_amount = len(streamers1.get_streamers_ids_with_no_video_data())
+    new_amount = len(streamers2.get_streamers_ids_with_no_video_data())
+    if (new_amount >= old_amount):
+        tests['videos1'] = False
+
+    print_test_results(tests)
 
 
 # ==============================================================================
@@ -612,6 +648,8 @@ def main():
         test_timelogs(credentials)
     if ((len(testing) == 0) or ("Add Followers" in testing)):
         test_add_followers(credentials)
+    if ((len(testing) == 0) or ("Add Videos" in testing)):
+        test_add_videos(credentials)
 
 
 # Run --------------------------------------------------------------------------
