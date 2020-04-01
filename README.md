@@ -149,12 +149,10 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Because Streamers() will now load pre-existing files, tests.py now wipes .csv files before running tests
-
-
-#### What is still in development? Known Issues?
  - Add ability to register various .csv file locations in Scraper so they aren't hardcoded in functions
   - move all export_to_csv calls into Scraper under production mode
+
+#### What is still in development? Known Issues?
  - add streamers.get_streamer_ids_with_missing_follower_data()
   - will return all streamer IDs for streamers that don't have follower_count data from the past day
   - this will allow Scraper.add_followers_to_streamers_db() to work in batches instead of all streamers or nothing

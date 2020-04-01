@@ -486,6 +486,11 @@ class Scraper():
         self.twitchAPI = TwitchAPI(credentials['twitch'])
         self.igdbAPI = IGDBAPI(credentials['igdb'])
         self.mode = 'production' # <- determines print statements
+        self.filepaths = {
+            'games': './data/games.csv',
+            'streamers': './data/streamers.csv',
+            'logs': './logs/runtime.csv'
+        }
         return
 
     # lets user activate a different mode
@@ -499,6 +504,9 @@ class Scraper():
         if (self.mode == 'production'):
             print(message)
 
+    # updates which files Scraper points at
+    def update_filepaths(filetype, filepath):
+        self.filepaths[filetype] = filepath
 
     # Compiling Games DB -------------------------------------------------------
 
@@ -525,7 +533,8 @@ class Scraper():
         if (self.mode == 'production'):
             self.igdbAPI.request_logs.print_stats()
             num_games = len(games.get_ids())
-            self.igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'games', num_games)
+            self.igdbAPI.request_logs.export_to_csv(self.filepaths['logs'], 'games', num_games)
+            games.export_to_csv(self.filepaths['games'])
         return games
 
 
@@ -574,7 +583,8 @@ class Scraper():
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()
             num_streamers = len(streamers.get_streamer_ids())
-            self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'streamers', num_streamers)
+            self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'streamers', num_streamers)
+            streamers.export_to_csv(self.filepaths['streamers'])
         return streamers
 
 
@@ -652,7 +662,8 @@ class Scraper():
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()
             num_streamers = streamer_limit if (len(streamer_ids) > streamer_limit) else len(streamer_ids)
-            self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'videos', num_streamers)
+            self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'videos', num_streamers)
+            streamers.export_to_csv(self.filepaths['streamers'])
         return streamers
 
 
@@ -697,7 +708,8 @@ class Scraper():
         # save our results
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()
-            self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'followers', len(streamer_ids))
+            self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'followers', len(streamer_ids))
+            streamers.export_to_csv(self.filepaths['streamers'])
 
         return streamers
 
@@ -724,20 +736,14 @@ def run():
 
     # perform actions !
     if args.games:
-        igdbGames = scraper.compile_games_db()
-        igdbGames.export_to_csv('./data/games.csv')
-        igdbGames.print_stats()
-
+        scraper.compile_games_db()
     if args.streamers:
-        streamers = scraper.compile_streamers_db()
-        streamers.export_to_csv('./data/streamers.csv')
-
+        scraper.compile_streamers_db()
     if args.videos:
         if (args.videos == -1):
             scraper.add_videos_to_streamers_db('./data/streamers.csv')
         else:
             scraper.add_videos_to_streamers_db('./data/streamers.csv', 9999999, args.videos)
-
     if args.followers:
         scraper.add_followers_to_streamers_db('./data/streamers.csv')
 
