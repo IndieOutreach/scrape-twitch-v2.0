@@ -146,7 +146,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Add scraper.add_videos_to_streamers_db()
+ - Fix logging bug in Scraper.add_videos_to_streamers_db()
 
 #### What is still in development? Known Issues?
  - keep track of views contributed by the last stream so Streamer can replace a view count if number goes up

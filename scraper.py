@@ -696,8 +696,8 @@ class Scraper():
 
         # save our results
         if (self.mode == 'production'):
-            self.igdbAPI.request_logs.print_stats()
-            self.igdbAPI.request_logs.export_to_csv('./logs/runtime.csv', 'followers', len(streamer_ids))
+            self.twitchAPI.request_logs.print_stats()
+            self.twitchAPI.request_logs.export_to_csv('./logs/runtime.csv', 'followers', len(streamer_ids))
 
         return streamers
 
