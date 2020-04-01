@@ -149,13 +149,13 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add explicit printing setting to Scrapers, decoupling it from 'production' mode
+- add streamers.get_streamer_ids_with_missing_follower_data(), which returns all streamer IDs for streamers that don't have follower_count data from the past 24 hours
+ - this allows Scraper.add_followers_to_streamers_db() to work in batches instead of all streamers or nothing
+- change logging values for 'num_items' attribute to reflect the number of items scraped instead of the total number of streamers
 
 #### What is still in development? Known Issues?
- - add streamers.get_streamer_ids_with_missing_follower_data()
-  - will return all streamer IDs for streamers that don't have follower_count data from the past day
-  - this will allow Scraper.add_followers_to_streamers_db() to work in batches instead of all streamers or nothing
-
+ - filepaths being passed into Scraper functions are useless and should be removed
+ - num_videos is useless because livestreamed games have int IDs and video games have string IDs
 
 #### What's next?
  - Create insights.py for drawing insights from streamers.csv data

@@ -512,7 +512,7 @@ def test_add_followers(credentials):
 
     print_test_title("Add Followers")
     test_names = [
-        'followers0'
+        'followers0', 'followers1'
     ]
     tests = get_empty_test(test_names)
 
@@ -526,6 +526,7 @@ def test_add_followers(credentials):
     # followers0: -> make sure that a streamer's follower_counts increases
     # Because .add_followers_to_streamers_db() *needs* a filepath, we will create a .csv file for it to load
     streamers1 = scraper.compile_streamers_db(5)
+    num_missing1 = len(streamers1.get_streamer_ids_with_missing_follower_data())
     streamers1.export_to_csv(filename)
     streamers2 = scraper.add_followers_to_streamers_db(filename)
 
@@ -541,6 +542,11 @@ def test_add_followers(credentials):
         elif (not validate_follower_counts(streamer2.follower_counts)):
             tests['followers0'] = False
 
+
+    # followers1: -> make sure that the number of elligible streamers goes down
+    num_missing2 = len(streamers2.get_streamer_ids_with_missing_follower_data())
+    if ((num_missing2 >= num_missing1) or (num_missing2 != 0)):
+        tests['followers1'] = False
 
     print_test_results(tests)
 
@@ -572,7 +578,7 @@ def test_add_videos(credentials):
     scraper = Scraper(credentials)
     scraper.set_mode('testing')
     scraper.set_print_mode(False)
-    
+
     filename = './test/streamers_videos.csv'
     wipe_file(filename)
 

@@ -171,6 +171,17 @@ class Streamer():
 
         return latest_date, game_ids
 
+    # returns the most recent follower count obj for this streamer
+    # -> this should be the last follower_count object in the list, but we will check every case to be safe
+    def get_most_recent_follower_count(self):
+        if (len(self.follower_counts) == 0):
+            return False
+
+        followers = self.follower_counts[0]
+        for obj in self.follower_counts:
+            if (obj['date'] > followers['date']):
+                followers = obj
+        return followers
 
     # returns a tuple ([list of games in livestreams], [list of games in videos])
     def get_games_played(self):
@@ -246,7 +257,28 @@ class Streamers():
             livestreamed_games, video_games = streamer.get_games_played()
             if (len(video_games) == 0):
                 ids.append(id)
+
+        ids.sort()
         return ids
+
+
+    # returns a list of all streamer IDs that do not have follower data from the last day
+    def get_streamer_ids_with_missing_follower_data(self):
+
+        ids = []
+        current_time = int(time.time()) # <- this is in seconds
+        day_boundary = current_time - 60 * 60 * 24 # <- seconds*minutes*hours ~ seconds in a day
+
+        for id, streamer in self.streamers.items():
+            follower_count = streamer.get_most_recent_follower_count()
+            if (follower_count == False):
+                ids.append(id)
+            elif (follower_count['date'] < day_boundary):
+                ids.append(id)
+
+        ids.sort()
+        return ids
+
 
     # insert -------------------------------------------------------------------
 

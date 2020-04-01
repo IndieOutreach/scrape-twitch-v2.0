@@ -507,7 +507,7 @@ class Scraper():
 
     def set_print_mode(self, print_mode):
         self.print_mode_on = print_mode
-        
+
     # updates which files Scraper points at
     def update_filepaths(filetype, filepath):
         self.filepaths[filetype] = filepath
@@ -586,7 +586,7 @@ class Scraper():
 
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()
-            num_streamers = len(streamers.get_streamer_ids())
+            num_streamers = len(streams)
             self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'streamers', num_streamers)
             streamers.export_to_csv(self.filepaths['streamers'])
         return streamers
@@ -652,10 +652,7 @@ class Scraper():
         self.__print('scraping videos for ' + str(streamers_to_scrape) + ' streamers')
 
 
-        for i in range(len(streamer_ids)):
-            if (i > streamer_limit):
-                return streamers
-
+        for i in range(streamers_to_scrape):
             streamer_id = streamer_ids[i]
             videos = self.get_all_videos_for_streamer(streamer_id, video_limit)
             self.__print(str(i) + ': streamer=' + str(streamer_id) + ', #videos=' + str(len(videos)))
@@ -666,7 +663,7 @@ class Scraper():
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()
             num_streamers = streamer_limit if (len(streamer_ids) > streamer_limit) else len(streamer_ids)
-            self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'videos', num_streamers)
+            self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'videos', streamers_to_scrape)
             streamers.export_to_csv(self.filepaths['streamers'])
         return streamers
 
@@ -690,17 +687,21 @@ class Scraper():
     # Scrape Follower Counts ---------------------------------------------------
 
     # loads all the streamers from the streamers.csv file and searches for follower data for them
-    def add_followers_to_streamers_db(self, filepath = './data/streamers.csv'):
+    def add_followers_to_streamers_db(self, filepath = './data/streamers.csv', limit = 9999999):
 
         streamers = Streamers(filepath)
-        streamer_ids = streamers.get_streamer_ids()
+        streamer_ids = streamers.get_streamer_ids_with_missing_follower_data()
 
         # we can't add followers if there are no streamer profiles to add to
         if (len(streamer_ids) == 0):
             return streamers
 
+        # get the number of streamers we will be processing
+        num_streamers_to_process = limit if (limit < len(streamer_ids)) else len(streamer_ids)
+        self.__print("scraping followers for " + str(num_streamers_to_process) + " streamers (out of " + str(len(streamer_ids)) + " possible)")
+
         # iterate over each streamer object and add a followers count to their profile
-        for i in range(len(streamer_ids)):
+        for i in range(num_streamers_to_process):
             if ((self.mode == 'testing') and (i > 10)):
                 return streamers
 
@@ -712,7 +713,7 @@ class Scraper():
         # save our results
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()
-            self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'followers', len(streamer_ids))
+            self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'followers', num_streamers_to_process)
             streamers.export_to_csv(self.filepaths['streamers'])
 
         return streamers
@@ -735,7 +736,7 @@ def run():
     parser.add_argument('-g', '--games', dest='games', action="store_true", help='scrapes games from IGDB into /data/games.csv')
     parser.add_argument('-s', '--streamers', dest='streamers', action="store_true", help='scrapes all livestreams from Twitch and compiles corresponding streamer profiles into /data/streamers.csv')
     parser.add_argument('-v', '--videos', dest='videos', type=int, const=-1, nargs='?', help='scrapes video data for the N most popular streamers in the dataset that do not already have video data. If N missing, scrapes for all applicable streamers in dataset.')
-    parser.add_argument('-f', '--followers', dest='followers', type=int, const=-1, nargs='?', help='scrapes follower counts for the N most popular streamers in dataset that have not already had their follower count been recorded within the last 24 hours. If N missing, scrapes all applicable streamers in dataset.')
+    parser.add_argument('-f', '--followers', dest='followers', type=int, const=9999999, nargs='?', help='scrapes follower counts for the N most popular streamers in dataset that have not already had their follower count been recorded within the last 24 hours. If N missing, scrapes all applicable streamers in dataset.')
     args = parser.parse_args()
 
     # perform actions !
@@ -749,7 +750,7 @@ def run():
         else:
             scraper.add_videos_to_streamers_db('./data/streamers.csv', 9999999, args.videos)
     if args.followers:
-        scraper.add_followers_to_streamers_db('./data/streamers.csv')
+        scraper.add_followers_to_streamers_db('./data/streamers.csv', args.followers)
 
 
 
