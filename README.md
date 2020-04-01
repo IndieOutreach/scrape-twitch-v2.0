@@ -29,6 +29,8 @@ Used for scraping data from the Twitch and IGDB APIs
 Flags:
  - `-g` or `--games`: uses the IGDB API to compile all games from IGDB into '/data/games.csv'
  - `-s` or `--streamers`: use the Twitch API to scrape all livestreams on Twitch, search for streamer profiles, and use that to build '/data/streamers.csv'
+ - `-v [N]` or `--videos [N]`: uses the Twitch API to scrape all videos for N streamers who currently do not have video data on record. Omitting N will execute this command on all applicable streamers.
+ - `-f`: uses the TwitchAPI to scrape follower counts for all streamers in the /data/streamers.csv file
 
 #### tests.py
 Testing script that checks functionality in scraper.py
@@ -71,27 +73,6 @@ We treat videos as if they are just livestreams we missed
  Note: Streams are not permanently recorded. Their information is stored into a Streamer and is then discarded.
 
 
-#### Game -> games.csv
-Info about a game from IGDB
- - `id` - unique IGDB ID for the game
- - `name` - the name of the game
- - `genres` - a list of genre IDs
- - `keywords` - a list of keyword IDs
- - `themes` - a list of theme IDs
- - `platforms` - a list of platform IDs
- - `rating` - rating of the game out of 100
- - `collection` - series of games it belongs to
- - `release_date` - date it was initially launched
- - `game_modes` - list of game mode IDs (single player, co-op, etc)
- - `player_perspectives` - list of perspectives the player plays in
- - `popularity` - popularity of the game (x/10)
- - `similar_games` - list of similar games, bu IGDB game IDs
- - `time_to_beat` - how long it takes to beat the game
- - `age_ratings` - list of rating IDs
- - `category` - int denoting what category of game this is (main, dlc, etc)
- - `igdb_box_art_url` - URL for game's box art from IGDB
- - `twitch_box_art_url` - URL for game's box art from Twitch
-
 #### Streamer -> streamers.csv
 Streamer profiles
 
@@ -109,6 +90,28 @@ Data aggregated from streams:
   - where DATE_OBJ = `{scraped: INT_DATE, streamed: INT_DATE}`
   - Note: views does not include the views on videos, so you'd have to to account for this when calculating average views
  - `language` - this value is just whatever the last processed stream's language was
+
+
+#### Game -> games.csv
+ Info about a game from IGDB
+  - `id` - unique IGDB ID for the game
+  - `name` - the name of the game
+  - `genres` - a list of genre IDs
+  - `keywords` - a list of keyword IDs
+  - `themes` - a list of theme IDs
+  - `platforms` - a list of platform IDs
+  - `rating` - rating of the game out of 100
+  - `collection` - series of games it belongs to
+  - `release_date` - date it was initially launched
+  - `game_modes` - list of game mode IDs (single player, co-op, etc)
+  - `player_perspectives` - list of perspectives the player plays in
+  - `popularity` - popularity of the game (x/10)
+  - `similar_games` - list of similar games, bu IGDB game IDs
+  - `time_to_beat` - how long it takes to beat the game
+  - `age_ratings` - list of rating IDs
+  - `category` - int denoting what category of game this is (main, dlc, etc)
+  - `igdb_box_art_url` - URL for game's box art from IGDB
+  - `twitch_box_art_url` - URL for game's box art from Twitch
 
 
 #### Twitch To IGDB -> twitch_to_igdb.csv
@@ -146,7 +149,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Fix logging bug in Scraper.add_videos_to_streamers_db()
+ - Update README
 
 #### What is still in development? Known Issues?
  - keep track of views contributed by the last stream so Streamer can replace a view count if number goes up
