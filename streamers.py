@@ -194,6 +194,25 @@ class Streamer():
         return livestreams, videos
 
 
+    # returns all games livestreamed in date range
+    def get_games_livestreamed_in_range(self, time1 = 0, time2 = int(time.time())):
+        games = []
+        for game_id in self.stream_history:
+            if (isinstance(game_id, int)):
+                for livestream in self.stream_history[game_id]['dates']:
+                    if ((livestream['streamed'] >= time1) and (livestream['streamed'] <= time2)):
+                        games.append(game_id)
+        return games
+
+    # returns all view_counts within date range
+    def get_view_counts_in_range(self, time1 = 0, time2 = int(time.time())):
+        view_counts = []
+        for obj in self.total_views:
+            if ((obj['date'] >= time1) and (obj['date'] <= time2)):
+                view_counts.append(obj)
+        return view_counts
+
+
     def get_twitch_url(self):
         return 'https://www.twitch.tv/' + self.login
 
@@ -245,13 +264,13 @@ class Streamers():
 
     # returns a list of all streamer IDs in collection
     # this list is sorted so that it will return consistent results
-    def get_streamer_ids(self):
+    def get_ids(self):
         ids = list(self.streamers.keys())
         ids.sort()
         return ids
 
     # returns a list of streamer IDs that do not have any streamer data on record
-    def get_streamers_ids_with_no_video_data(self):
+    def get_ids_with_no_video_data(self):
         ids = []
         for id, streamer in self.streamers.items():
             livestreamed_games, video_games = streamer.get_games_played()
@@ -263,7 +282,7 @@ class Streamers():
 
 
     # returns a list of all streamer IDs that do not have follower data from the last day
-    def get_streamer_ids_with_missing_follower_data(self):
+    def get_ids_with_missing_follower_data(self):
 
         ids = []
         current_time = int(time.time()) # <- this is in seconds
@@ -278,6 +297,24 @@ class Streamers():
 
         ids.sort()
         return ids
+
+
+    # returns all streamers who livestreamed within a range of times
+    def get_ids_who_livestreamed_in_range(self, time1, time2):
+        ids = []
+        for id, streamer in self.streamers.items():
+            if (len(streamer.get_games_livestreamed_in_range(time1, time2)) > 0):
+                ids.append(id)
+        return ids
+
+    # returns all streamers with view_counts from within a range of times
+    def get_ids_with_view_counts_in_range(self, time1, time2):
+        ids = []
+        for id, streamer in self.streamers.items():
+            if (len(streamer.get_view_counts_in_range(time1, time2)) > 0):
+                ids.append(id)
+        return ids
+
 
 
     # insert -------------------------------------------------------------------

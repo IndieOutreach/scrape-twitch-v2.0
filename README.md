@@ -32,6 +32,9 @@ Flags:
  - `-v [N]` or `--videos [N]`: uses the Twitch API to scrape all videos for N streamers who currently do not have video data on record. Omitting N will execute this command on all applicable streamers.
  - `-f`: uses the TwitchAPI to scrape follower counts for all streamers in the /data/streamers.csv file
 
+#### insights.py
+Used for drawing insights from the dataset
+
 #### tests.py
 Testing script that checks functionality in scraper.py
 
@@ -41,7 +44,7 @@ Contains the Games() and Game() classes
 #### streamers.py
 Contains the Stream(), Streamer(), and Streamers() classes
 
-#### credentials.py
+#### credentials.json
 credentials.py holds API credentials for both Twitch and IGDB
 Format:
  -  `{"twitch": {"client_id": "YOUR_APPS_CLIENT_ID", "client_secret": "YOUR_APPS_CLIENT_SECRET", "v5_client_id": "A_CLIENT_ID_FOR_V5_API"}, "igdb": "YOUR_IGDB_USER_KEY"}`
@@ -149,14 +152,18 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- All .csv filepaths used by Scraper are now determined by Scraper.mode and Scraper.filepaths
+- Create insights.py for drawing insights from streamers.csv data
 
 
 #### What is still in development? Known Issues?
- - num_videos is useless because livestreamed games have int IDs and video games have string IDs
+ - Streamers that don't have any videos on Twitch will keep appearing in .get_streamers_ids_with_no_video_data()
+ - Everytime Scraper.compile_streamers_db() gets called, a 'total_views' item gets added
+  - modify this so it only adds a new view count object we haven't scraped one in the last 24 hours
+  - rename 'total_views' to 'view_counts' for better naming consistency
+ - Streamers.get_ids_with_missing_follower_data() currently hardcodes the dates instead of using a more general Streamer function that is date range aware
 
 #### What's next?
- - Create insights.py for drawing insights from streamers.csv data
+ - Add logging for insights
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 
 #### Future Roadmap
@@ -167,3 +174,4 @@ Keeps track of actions and requests made by scraper.py
  - move TimeLogs over to its own file timelogs.py and add functions for calculating stats from those logs
  - Add `reset_logs` function to Scraper so you can re-use the same Scraper instance between different scraping procedures and not double-up on log data
  - Build controller for scraping in production - maybe a server that dispatches requests to threads?
+ - Add timeout handling to API requests

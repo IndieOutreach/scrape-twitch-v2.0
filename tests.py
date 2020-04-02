@@ -372,7 +372,7 @@ def test_scrape_streamers(credentials):
 
     # compile test 0: -> make sure scraped streamers have games data
     streamers = scraper.compile_streamers_db(5)
-    streamer_ids = streamers.get_streamer_ids()
+    streamer_ids = streamers.get_ids()
     if (len(streamer_ids) == 0):
         tests['compile0'] = False
     else:
@@ -526,12 +526,12 @@ def test_add_followers(credentials):
     # followers0: -> make sure that a streamer's follower_counts increases
     # Because .add_followers_to_streamers_db() *needs* a filepath, we will create a .csv file for it to load
     streamers1 = scraper.compile_streamers_db(5)
-    num_missing1 = len(streamers1.get_streamer_ids_with_missing_follower_data())
+    num_missing1 = len(streamers1.get_ids_with_missing_follower_data())
     streamers1.export_to_csv(filename)
     streamers2 = scraper.add_followers_to_streamers_db()
 
-    for id in streamers1.get_streamer_ids():
-        if (id not in streamers2.get_streamer_ids()):
+    for id in streamers1.get_ids():
+        if (id not in streamers2.get_ids()):
             tests['followers0'] = False
 
         streamer1 = streamers1.get(id)
@@ -544,7 +544,7 @@ def test_add_followers(credentials):
 
 
     # followers1: -> make sure that the number of elligible streamers goes down
-    num_missing2 = len(streamers2.get_streamer_ids_with_missing_follower_data())
+    num_missing2 = len(streamers2.get_ids_with_missing_follower_data())
     if ((num_missing2 >= num_missing1) or (num_missing2 != 0)):
         tests['followers1'] = False
 
@@ -587,7 +587,7 @@ def test_add_videos(credentials):
     streamers1.export_to_csv(filename)
     streamers2 = scraper.add_videos_to_streamers_db(15)
     num_streamers_without_videos = 0
-    for streamer_id in streamers1.get_streamer_ids():
+    for streamer_id in streamers1.get_ids():
         streamer1 = streamers1.get(streamer_id)
         streamer2 = streamers2.get(streamer_id)
 
@@ -598,8 +598,8 @@ def test_add_videos(credentials):
         tests['videos0'] = False
 
     # videos1: -> make sure scraping videos decreases the number of streamers eligible to have their videos scraped
-    old_amount = len(streamers1.get_streamers_ids_with_no_video_data())
-    new_amount = len(streamers2.get_streamers_ids_with_no_video_data())
+    old_amount = len(streamers1.get_ids_with_no_video_data())
+    new_amount = len(streamers2.get_ids_with_no_video_data())
     if (new_amount >= old_amount):
         tests['videos1'] = False
 

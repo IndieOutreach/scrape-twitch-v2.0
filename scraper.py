@@ -557,7 +557,7 @@ class Scraper():
 
         # load existing streamers
         streamers = Streamers(self.filepaths['streamers'])
-        self.__print('Starting with ' + str(len(streamers.get_streamer_ids())) + ' streamers from CSV file')
+        self.__print('Starting with ' + str(len(streamers.get_ids())) + ' streamers from CSV file')
 
 
         # get all livestreams currently on Twitch
@@ -649,7 +649,7 @@ class Scraper():
     def add_videos_to_streamers_db(self, video_limit = 9999999, streamer_limit = 9999999):
 
         streamers = Streamers(self.filepaths['streamers'])
-        streamer_ids = streamers.get_streamers_ids_with_no_video_data()
+        streamer_ids = streamers.get_ids_with_no_video_data()
 
         if (len(streamer_ids) == 0):
             return
@@ -696,7 +696,7 @@ class Scraper():
     def add_followers_to_streamers_db(self, limit = 9999999):
 
         streamers = Streamers(self.filepaths['streamers'])
-        streamer_ids = streamers.get_streamer_ids_with_missing_follower_data()
+        streamer_ids = streamers.get_ids_with_missing_follower_data()
 
         # we can't add followers if there are no streamer profiles to add to
         if (len(streamer_ids) == 0):
