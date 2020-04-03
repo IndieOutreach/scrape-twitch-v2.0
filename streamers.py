@@ -16,6 +16,9 @@ import json
 import time
 import datetime
 
+csv.field_size_limit(sys.maxsize) # <- so csv can load very large fields
+
+
 # ==============================================================================
 # Stream
 # ==============================================================================

@@ -128,8 +128,6 @@ class TimeLogs():
             var += (mean - t) ** 2
         if (len(times) > 1):
             var = var / (len(times) - 1)
-        else:
-            var = var / (len(times))
         std_dev = math.sqrt(var)
 
         stats = {
@@ -229,7 +227,7 @@ class TwitchAPI():
     # Twitch allows 800 requests per minute = ~13 requests per second
     # -> to be safe, when we run out wait an entire second
     def __sleep(self, header, min_sleep = 0):
-        if (('ratelimit_remaining' in header) and (header['ratelimit_remaining'] == 0)):
+        if (('ratelimit_remaining' in header) and (header['ratelimit_remaining'] <= 1)):
             print('sleeping...', header['ratelimit_remaining'])
             time.sleep(1)
         elif (min_sleep > 0):
@@ -323,8 +321,8 @@ class TwitchAPI():
         if (r.status_code == 200):
             data = r.json()
             game = data['game']
-        else:
-            self.sleep(r.headers, 2)
+        elif (r.status_code == 429): # <- too many requests
+            self.__sleep(r.headers, 2)
             return self.get_game_name_in_video(self, video_id)
 
         self.__sleep(r.headers)

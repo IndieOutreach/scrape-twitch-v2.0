@@ -152,7 +152,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Create insights.py for drawing insights from streamers.csv data
+- Add Insights.get_stream_history_stats() to extract mean/median/std_dev stats about videos/livestreams and the games in them
 
 
 #### What is still in development? Known Issues?
