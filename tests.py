@@ -406,7 +406,7 @@ def validate_streamer(streamer):
         (len(streamer['login']) <= 0)                                         or
         (len(streamer['display_name']) <= 0)                                  or
         ('https://static-cdn.jtvnw.net' not in streamer['profile_image_url']) or
-        (not validate_total_views(streamer['total_views']))                   or
+        (not validate_view_counts(streamer['view_counts']))                   or
         (not isinstance(streamer['follower_counts'], list))                   or
         (streamer['language'] == '')                                          or
         (not validate_stream_history(streamer['stream_history']))
@@ -426,12 +426,12 @@ def validate_stream_history(stream_history):
             return False
     return True
 
-# makes sure that a total_views object is correctly formatted and has some view counts
-def validate_total_views(total_views):
-    if ((not (isinstance(total_views, list)) or (len(total_views) == 0))):
+# makes sure that a view_counts object is correctly formatted and has some view counts
+def validate_view_counts(view_counts):
+    if ((not (isinstance(view_counts, list)) or (len(view_counts) == 0))):
         return False
 
-    for obj in total_views:
+    for obj in view_counts:
         if (
             (('views' not in obj) or (obj['views'] <= 0)) or
             (('date' not in obj) or (obj['date'] <= 0))

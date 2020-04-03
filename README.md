@@ -84,7 +84,7 @@ Data from Twitch API:
  - `login` - the login name of a streamer, can be used to make their Twitch URL
  - `display_name`- the streamer's name
  - `profile_image_url` - the streamer's profile picture
- - `total_views` - A list of `{views: # views, date: UNIX_EPOCH_TIME}` objects. These objects represent the total number of views a streamer has at certain dates (different than the calculated number IndieOutreach will use)
+ - `view_counts` - A list of `{views: # views, date: UNIX_EPOCH_TIME}` objects. These objects represent the total number of views a streamer has at certain dates (different than the calculated number IndieOutreach will use)
  - `description` - user's bio
  - `follower_counts` - List of `{followers: INT, date: DATE_INT}` objects that show how many followers the streamer has over time
 
@@ -152,14 +152,13 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Add Insights.get_stream_history_stats() now calls .get_totals() to get info on total # streamers, videos, livestreams, and game_ids in dataset
+- rename 'total_views' to 'view_counts' for better naming consistency
 
 
 #### What is still in development? Known Issues?
  - Streamers that don't have any videos on Twitch will keep appearing in .get_streamers_ids_with_no_video_data()
- - Everytime Scraper.compile_streamers_db() gets called, a 'total_views' item gets added
+ - Everytime Scraper.compile_streamers_db() gets called, a 'view_counts' item gets added
   - modify this so it only adds a new view count object we haven't scraped one in the last 24 hours
-  - rename 'total_views' to 'view_counts' for better naming consistency
  - Streamers.get_ids_with_missing_follower_data() currently hardcodes the dates instead of using a more general Streamer function that is date range aware
 
 #### What's next?

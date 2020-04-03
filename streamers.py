@@ -67,7 +67,7 @@ class Streamer():
             self.login             = streamer_obj['login']
             self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
-            self.total_views       = json.loads(streamer_obj['total_views'])
+            self.view_counts       = json.loads(streamer_obj['view_counts'])
             self.description       = streamer_obj['description']
             self.follower_counts   = json.loads(streamer_obj['follower_counts'])
             self.language          = streamer_obj['language']
@@ -78,7 +78,7 @@ class Streamer():
             self.login             = streamer_obj['login']
             self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
-            self.total_views       = [ {'views': streamer_obj['view_count'], 'date': int(time.time())} ]
+            self.view_counts       = [ {'views': streamer_obj['view_count'], 'date': int(time.time())} ]
             self.description       = streamer_obj['description']
             self.follower_counts   = streamer_obj['follower_counts'] if ('follower_counts' in streamer_obj) else []
             self.language          = streamer_obj['language'] if ('language' in streamer_obj) else ""
@@ -110,7 +110,7 @@ class Streamer():
         self.profile_image_url = streamer_obj['profile_image_url']
         self.description       = streamer_obj['description']
         self.language          = streamer_obj['language'] if ('language' in streamer_obj) else self.language
-        self.total_views.append({'views': streamer_obj['view_count'], 'date': int(time.time())})
+        self.view_counts.append({'views': streamer_obj['view_count'], 'date': int(time.time())})
 
 
     # adds a new entry to follower_count
@@ -210,7 +210,7 @@ class Streamer():
     # returns all view_counts within date range
     def get_view_counts_in_range(self, time1 = 0, time2 = int(time.time())):
         view_counts = []
-        for obj in self.total_views:
+        for obj in self.view_counts:
             if ((obj['date'] >= time1) and (obj['date'] <= time2)):
                 view_counts.append(obj)
         return view_counts
@@ -242,7 +242,7 @@ class Streamer():
             'login': self.login,
             'display_name': self.display_name,
             'profile_image_url': self.profile_image_url,
-            'total_views': self.total_views,
+            'view_counts': self.view_counts,
             'description': self.description,
             'follower_counts': self.follower_counts,
             'language': self.language,
@@ -253,7 +253,7 @@ class Streamer():
     def to_exportable_dict(self):
         obj = self.to_dict()
         obj['stream_history'] = json.dumps(obj['stream_history'])
-        obj['total_views'] = json.dumps(obj['total_views'])
+        obj['view_counts'] = json.dumps(obj['view_counts'])
         obj['follower_counts'] = json.dumps(obj['follower_counts'])
         return obj
 
@@ -362,7 +362,7 @@ class Streamers():
 
     def export_to_csv(self, filename):
         fieldnames = [
-            'id', 'login', 'display_name', 'profile_image_url', 'total_views', 'description',
+            'id', 'login', 'display_name', 'profile_image_url', 'view_counts', 'description',
             'follower_counts', 'language', 'stream_history'
         ]
         filename = filename if ('.csv' in filename) else filename + '.csv'
@@ -427,8 +427,8 @@ class Streamers():
                 if (key == 'stream_history'): # <- this will be the 'stream_history' parameter
                     if (not self.__check_if_stream_histories_same(val1, val2)):
                         return False
-                elif (key == 'total_views'):
-                    if (not self.__check_if_total_views_same(val1, val2)):
+                elif (key == 'view_counts'):
+                    if (not self.__check_if_view_counts_same(val1, val2)):
                         return False
                 elif (key == 'follower_counts'):
                     if (not self.__check_if_followers_same(val1, val2)):
@@ -482,9 +482,9 @@ class Streamers():
 
         return True
 
-    # returns True if two total_views lists are the same
-    # - total_views has form: [{'views': INT, 'date': INT_DATE}]
-    def __check_if_total_views_same(self, views1, views2):
+    # returns True if two view_counts lists are the same
+    # - view_counts has form: [{'views': INT, 'date': INT_DATE}]
+    def __check_if_view_counts_same(self, views1, views2):
 
         # make sure both views objects are lists
         if ((not isinstance(views1, list)) or (not isinstance(views2, list))):
