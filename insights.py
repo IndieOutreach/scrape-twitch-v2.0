@@ -126,6 +126,8 @@ class Insights():
         for key, value in stream_history_stats.items():
             results[key] = value
 
+        # Q: What is the number of views per stream like?
+        results['views_per_stream'] = self.get_livestream_views_breakdown()
         return results
 
     # gets data about Streamer.stream_history values
@@ -136,37 +138,27 @@ class Insights():
     def get_stream_history_stats(self):
         stats = {
             'livestreams_per_streamer': {'num_streamers': 0, 'min': -1, 'max': -1, 'mean': 0, 'median': 0, 'std_dev': 0},
-            'games_per_streamer_livestreams': {'num_streamers': 0, 'min': -1, 'max': -1, 'mean': 0, 'median': 0, 'std_dev': 0},
+            'games_per_streamer_from_livestreams': {'num_streamers': 0, 'min': -1, 'max': -1, 'mean': 0, 'median': 0, 'std_dev': 0},
             'videos_per_streamer': {'num_streamers': 0, 'min': -1, 'max': -1, 'mean': 0, 'median': 0, 'std_dev': 0},
-            'games_per_streamer_videos': {'num_streamers': 0, 'min': -1, 'max': -1, 'mean': 0, 'median': 0, 'std_dev': 0}
+            'games_per_streamer_from_videos': {'num_streamers': 0, 'min': -1, 'max': -1, 'mean': 0, 'median': 0, 'std_dev': 0}
         }
 
 
         median_lists = {
             'livestreams_per_streamer': [],
-            'games_per_streamer_livestreams': [],
+            'games_per_streamer_from_livestreams': [],
             'videos_per_streamer': [],
-            'games_per_streamer_videos': []
+            'games_per_streamer_from_videos': []
         }
 
         # use this for caching values between first and second passes
         lookup = {
             'livestreams_per_streamer': {},
             'videos_per_streamer': {},
-            'games_per_streamer_videos': {},
-            'games_per_streamer_livestreams': {}
+            'games_per_streamer_from_videos': {},
+            'games_per_streamer_from_livestreams': {}
         }
 
-
-        # first pass of quantity ('livestreams_per_streamer' + 'videos_per_streamer')
-        # -> sums up the total number of livestreams or videos played
-        def get_quantity_data_first_pass(stats_obj, key, times_played):
-            stats_obj[key]['mean'] += times_played
-            if ((stats_obj[key]['min'] == -1) or (stats_obj[key]['min'] > times_played)):
-                stats_obj[key]['min'] = times_played
-            if ((stats_obj[key]['max'] == -1) or (stats_obj[key]['max'] < times_played)):
-                stats_obj[key]['max'] = times_played
-            return stats_obj
 
         def add_min_max_data(stats_obj, key, val):
             if ((stats_obj[key]['min'] == -1) or (stats_obj[key]['min'] > val)):
@@ -181,8 +173,8 @@ class Insights():
 
             streamer = self.streamers.get(id)
             livestreams, videos = streamer.get_games_played()
-            lookup['games_per_streamer_videos'][id]      = len(videos) # <- use so we don't have to call .get_games_played() on second pass
-            lookup['games_per_streamer_livestreams'][id] = len(livestreams)
+            lookup['games_per_streamer_from_videos'][id]      = len(videos) # <- use so we don't have to call .get_games_played() on second pass
+            lookup['games_per_streamer_from_livestreams'][id] = len(livestreams)
             lookup['livestreams_per_streamer'][id]       = 0
             lookup['videos_per_streamer'][id]            = 0
             old_num_videos      = stats['videos_per_streamer']['num_streamers'] # <- use these to make sure we don't double count streamer
@@ -195,7 +187,7 @@ class Insights():
                     times_played = len(streamer.stream_history[game]['dates'])
                     if (stats['livestreams_per_streamer']['num_streamers'] == old_num_livestreams):
                         stats['livestreams_per_streamer']['num_streamers']       += 1
-                        stats['games_per_streamer_livestreams']['num_streamers'] += 1
+                        stats['games_per_streamer_from_livestreams']['num_streamers'] += 1
 
                     if (id in lookup['livestreams_per_streamer']):
                         lookup['livestreams_per_streamer'][id] += times_played
@@ -207,7 +199,7 @@ class Insights():
                     times_played = len(streamer.stream_history[game]['dates'])
                     if (stats['videos_per_streamer']['num_streamers'] == old_num_videos):
                         stats['videos_per_streamer']['num_streamers']       += 1
-                        stats['games_per_streamer_videos']['num_streamers'] += 1
+                        stats['games_per_streamer_from_videos']['num_streamers'] += 1
 
                     if (id in lookup['videos_per_streamer']):
                         lookup['videos_per_streamer'][id] += times_played
@@ -225,12 +217,12 @@ class Insights():
 
 
             # 3) add game info to stats (for mean)
-            stats['games_per_streamer_livestreams']['mean'] += lookup['games_per_streamer_livestreams'][id]
-            stats = add_min_max_data(stats, 'games_per_streamer_livestreams', lookup['games_per_streamer_livestreams'][id])
+            stats['games_per_streamer_from_livestreams']['mean'] += lookup['games_per_streamer_from_livestreams'][id]
+            stats = add_min_max_data(stats, 'games_per_streamer_from_livestreams', lookup['games_per_streamer_from_livestreams'][id])
 
-            if (lookup['games_per_streamer_videos'][id] > 0):
-                stats['games_per_streamer_videos']['mean'] += lookup['games_per_streamer_videos'][id]
-                stats = add_min_max_data(stats, 'games_per_streamer_videos', lookup['games_per_streamer_videos'][id])
+            if (lookup['games_per_streamer_from_videos'][id] > 0):
+                stats['games_per_streamer_from_videos']['mean'] += lookup['games_per_streamer_from_videos'][id]
+                stats = add_min_max_data(stats, 'games_per_streamer_from_videos', lookup['games_per_streamer_from_videos'][id])
 
 
             # 4) Add data to median lists for streamer
@@ -238,20 +230,20 @@ class Insights():
                 median_lists['livestreams_per_streamer'].append(lookup['livestreams_per_streamer'][id])
             if (lookup['videos_per_streamer'][id] > 0):
                 median_lists['videos_per_streamer'].append(lookup['videos_per_streamer'][id])
-            if (lookup['games_per_streamer_livestreams'][id] > 0):
-                median_lists['games_per_streamer_livestreams'].append(lookup['games_per_streamer_livestreams'][id])
-            if (lookup['games_per_streamer_videos'][id] > 0):
-                median_lists['games_per_streamer_videos'].append(lookup['games_per_streamer_videos'][id])
+            if (lookup['games_per_streamer_from_livestreams'][id] > 0):
+                median_lists['games_per_streamer_from_livestreams'].append(lookup['games_per_streamer_from_livestreams'][id])
+            if (lookup['games_per_streamer_from_videos'][id] > 0):
+                median_lists['games_per_streamer_from_videos'].append(lookup['games_per_streamer_from_videos'][id])
 
         # calculate out the correct mean values
         if (stats['livestreams_per_streamer']['num_streamers'] > 0):
             stats['livestreams_per_streamer']['mean'] = stats['livestreams_per_streamer']['mean'] / stats['livestreams_per_streamer']['num_streamers']
-        if (stats['games_per_streamer_livestreams']['num_streamers'] > 0):
-            stats['games_per_streamer_livestreams']['mean'] = stats['games_per_streamer_livestreams']['mean'] / stats['games_per_streamer_livestreams']['num_streamers']
+        if (stats['games_per_streamer_from_livestreams']['num_streamers'] > 0):
+            stats['games_per_streamer_from_livestreams']['mean'] = stats['games_per_streamer_from_livestreams']['mean'] / stats['games_per_streamer_from_livestreams']['num_streamers']
         if (stats['videos_per_streamer']['num_streamers'] > 0):
             stats['videos_per_streamer']['mean'] = stats['videos_per_streamer']['mean'] / stats['videos_per_streamer']['num_streamers']
-        if (stats['games_per_streamer_videos']['num_streamers'] > 0):
-            stats['games_per_streamer_videos']['mean'] = stats['games_per_streamer_videos']['mean'] / stats['games_per_streamer_videos']['num_streamers']
+        if (stats['games_per_streamer_from_videos']['num_streamers'] > 0):
+            stats['games_per_streamer_from_videos']['mean'] = stats['games_per_streamer_from_videos']['mean'] / stats['games_per_streamer_from_videos']['num_streamers']
 
         # calculate medians
         for key in median_lists:
@@ -265,37 +257,37 @@ class Insights():
             streamer = self.streamers.get(id)
 
             num_livestreams                    = lookup['livestreams_per_streamer'][id] if (id in lookup['livestreams_per_streamer']) else False
-            num_games_per_streamer_livestreams = lookup['games_per_streamer_livestreams'][id] if (id in lookup['games_per_streamer_livestreams']) else False
+            num_games_per_streamer_from_livestreams = lookup['games_per_streamer_from_livestreams'][id] if (id in lookup['games_per_streamer_from_livestreams']) else False
             num_videos                         = lookup['videos_per_streamer'][id] if (id in lookup['videos_per_streamer']) else False
-            num_games_per_streamer_videos      = lookup['games_per_streamer_videos'][id] if (id in lookup['games_per_streamer_videos']) else False
+            num_games_per_streamer_from_videos      = lookup['games_per_streamer_from_videos'][id] if (id in lookup['games_per_streamer_from_videos']) else False
 
             # calculate variances using formula: var = SUM{ (mean - observed)^2 }
             if ((num_livestreams != False) and (num_livestreams > 0)):
                 stats['livestreams_per_streamer']['std_dev'] += (stats['livestreams_per_streamer']['mean'] - num_livestreams) ** 2
-            if ((num_games_per_streamer_livestreams != False) and (num_games_per_streamer_livestreams > 0)):
-                stats['games_per_streamer_livestreams']['std_dev'] += (stats['games_per_streamer_livestreams']['mean'] - num_games_per_streamer_livestreams) ** 2
+            if ((num_games_per_streamer_from_livestreams != False) and (num_games_per_streamer_from_livestreams > 0)):
+                stats['games_per_streamer_from_livestreams']['std_dev'] += (stats['games_per_streamer_from_livestreams']['mean'] - num_games_per_streamer_from_livestreams) ** 2
             if ((num_videos != False) and (num_videos > 0)):
                 stats['videos_per_streamer']['std_dev'] += (stats['videos_per_streamer']['mean'] - num_videos) ** 2
-            if ((num_games_per_streamer_videos != False) and (num_games_per_streamer_videos > 0)):
-                stats['games_per_streamer_videos']['std_dev'] += (stats['games_per_streamer_videos']['mean'] - num_games_per_streamer_videos) ** 2
+            if ((num_games_per_streamer_from_videos != False) and (num_games_per_streamer_from_videos > 0)):
+                stats['games_per_streamer_from_videos']['std_dev'] += (stats['games_per_streamer_from_videos']['mean'] - num_games_per_streamer_from_videos) ** 2
 
 
 
         # complete variance calculations using formula: var = var / (# of items in sample - 1)
         if (stats['livestreams_per_streamer']['num_streamers'] > 1):
             stats['livestreams_per_streamer']['std_dev'] = stats['livestreams_per_streamer']['std_dev'] / (stats['livestreams_per_streamer']['num_streamers'] - 1)
-        if (stats['games_per_streamer_livestreams']['num_streamers'] > 1):
-            stats['games_per_streamer_livestreams']['std_dev'] = stats['games_per_streamer_livestreams']['std_dev'] / (stats['games_per_streamer_livestreams']['num_streamers'] - 1)
+        if (stats['games_per_streamer_from_livestreams']['num_streamers'] > 1):
+            stats['games_per_streamer_from_livestreams']['std_dev'] = stats['games_per_streamer_from_livestreams']['std_dev'] / (stats['games_per_streamer_from_livestreams']['num_streamers'] - 1)
         if (stats['videos_per_streamer']['num_streamers'] > 1):
             stats['videos_per_streamer']['std_dev'] = stats['videos_per_streamer']['std_dev'] / (stats['videos_per_streamer']['num_streamers'] - 1)
-        if (stats['games_per_streamer_videos']['num_streamers'] > 1):
-            stats['games_per_streamer_videos']['std_dev'] = stats['games_per_streamer_videos']['std_dev'] / (stats['games_per_streamer_videos']['num_streamers'] - 1)
+        if (stats['games_per_streamer_from_videos']['num_streamers'] > 1):
+            stats['games_per_streamer_from_videos']['std_dev'] = stats['games_per_streamer_from_videos']['std_dev'] / (stats['games_per_streamer_from_videos']['num_streamers'] - 1)
 
         # convert variance into standard deviation by square rooting it
         stats['livestreams_per_streamer']['std_dev']       = math.sqrt(stats['livestreams_per_streamer']['std_dev'])
-        stats['games_per_streamer_livestreams']['std_dev'] = math.sqrt(stats['games_per_streamer_livestreams']['std_dev'])
+        stats['games_per_streamer_from_livestreams']['std_dev'] = math.sqrt(stats['games_per_streamer_from_livestreams']['std_dev'])
         stats['videos_per_streamer']['std_dev']            = math.sqrt(stats['videos_per_streamer']['std_dev'])
-        stats['games_per_streamer_videos']['std_dev']      = math.sqrt(stats['games_per_streamer_videos']['std_dev'])
+        stats['games_per_streamer_from_videos']['std_dev']      = math.sqrt(stats['games_per_streamer_from_videos']['std_dev'])
 
 
         # round values
@@ -303,6 +295,66 @@ class Insights():
             stats[key]['mean']    = round(stats[key]['mean'], 2)
             stats[key]['std_dev'] = round(stats[key]['std_dev'], 2)
 
+        return stats
+
+
+    # returns a breakdown of the number of views each streamer has
+    def get_livestream_views_breakdown(self):
+
+        lookup = { 'views_per_stream': {}, 'views_per_stream_list': [] }
+        stats = {
+            'num_streamers': 0,
+            'mean': 0,
+            'median': 0,
+            'std_dev': 0,
+            'min': -1,
+            'max': -1
+        }
+
+        # get total view counts (from livestreams) for every streamer
+        for id in self.streamers.get_ids():
+            streamer = self.streamers.get(id)
+            livestream_history = streamer.get_livestream_history()
+            lookup['views_per_stream'][id] = 0
+            for game in livestream_history:
+                lookup['views_per_stream'][id] += livestream_history[game]['views']
+            lookup['views_per_stream'][id] = lookup['views_per_stream'][id] / len(livestream_history)
+            lookup['views_per_stream_list'].append(lookup['views_per_stream'][id])
+
+        # get the mean views and calculate min/max
+        min, max = -1, -1
+        mean = 0
+        for streamer_id, views in lookup['views_per_stream'].items():
+             mean += views
+
+             # calculate min/max
+             if ((min == -1) or (min > views)):
+                 min = views
+             if ((max == -1) or (max < views)):
+                 max = views
+
+        mean = mean / len(lookup['views_per_stream'])
+
+        # get the variance -> standard deviation
+        std_dev = 0
+        for streamer_id, views in lookup['views_per_stream'].items():
+            std_dev += (mean - views) ** 2
+        if (len(lookup['views_per_stream']) > 1):
+            std_dev = std_dev / (len(lookup['views_per_stream']) - 1)
+        std_dev = math.sqrt(std_dev)
+
+        # calculate median
+        lookup['views_per_stream_list'].sort()
+        midpoint = int(len(lookup['views_per_stream_list']) / 2)
+        median = lookup['views_per_stream_list'][midpoint]
+
+        # return stats object
+        stats['num_streamers'] = len(lookup['views_per_stream'])
+        stats['mean']    = round(mean, 2)
+        stats['median']  = median
+        stats['std_dev'] = round(std_dev, 2)
+        stats['min']     = min
+        stats['max']     = max
         return stats
 
 
@@ -317,7 +369,6 @@ def print_dict(d):
 def run():
     insights = Insights()
     results = insights.get_general_streamer_stats()
-    #results = insights.get_stream_history_stats()
     print_dict(results)
 
 # Run --------------------------------------------------------------------------

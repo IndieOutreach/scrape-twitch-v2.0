@@ -216,6 +216,22 @@ class Streamer():
         return view_counts
 
 
+    # returns self.stream_history, but with only videos
+    def get_video_history(self):
+        history = {}
+        for game in self.stream_history:
+            if (isinstance(game, str)):
+                history[game] = self.stream_history[game]
+        return history
+
+    # returns self.stream_history, but with only livestreams
+    def get_livestream_history(self):
+        history = {}
+        for game in self.stream_history:
+            if (isinstance(game, int)):
+                history[game] = self.stream_history[game]
+        return history
+
     def get_twitch_url(self):
         return 'https://www.twitch.tv/' + self.login
 
