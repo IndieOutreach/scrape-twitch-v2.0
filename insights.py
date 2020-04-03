@@ -64,7 +64,6 @@ class Insights():
     def get_general_streamer_stats(self):
 
         results = {
-            'num_streamers': 0,
             'have_video_data': {'percentage': 0, 'number': 0},
             'followers_past_day': {'percentage': 0, 'number': 0},
             'num_follower_counts': {},
@@ -83,7 +82,6 @@ class Insights():
 
         # Q: How many streamers don't have videos?
         num_no_video_ids = len(self.streamers.get_ids_with_no_video_data())
-        results['num_streamers'] = num_streamers
         results['have_video_data']['percentage'] = round(100 - (num_no_video_ids / num_streamers * 100), 2)
         results['have_video_data']['number']     = num_streamers - num_no_video_ids
 
@@ -128,6 +126,9 @@ class Insights():
 
         # Q: What is the number of views per stream like?
         results['views_per_stream'] = self.get_livestream_views_breakdown()
+
+        # Q: What is the total number of streamers in dataset? videos? livestreams? games?
+        results['totals'] = self.get_totals()
         return results
 
     # gets data about Streamer.stream_history values
@@ -355,6 +356,30 @@ class Insights():
         stats['std_dev'] = round(std_dev, 2)
         stats['min']     = min
         stats['max']     = max
+        return stats
+
+
+    # returns the total number of videos, livestreams etc in the dataset
+    def get_totals(self):
+
+        stats = {'num_streamers': 0, 'num_livestreams': 0, 'num_videos': 0, 'num_game_ids': 0}
+        stats['num_streamers'] = len(self.streamers.get_ids())
+        games = {}
+
+        for id in self.streamers.get_ids():
+            streamer = self.streamers.get(id)
+
+            livestream_history = streamer.get_livestream_history()
+            video_history      = streamer.get_video_history()
+
+            for game in livestream_history:
+                stats['num_livestreams'] += len(livestream_history[game]['dates'])
+                games[game] = 1
+            for game in video_history:
+                stats['num_videos'] += len(video_history[game]['dates'])
+                games[game] = 1
+
+        stats['num_game_ids'] = len(games)
         return stats
 
 
