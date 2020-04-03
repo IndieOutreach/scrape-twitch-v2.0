@@ -17,168 +17,7 @@ import argparse
 
 from games import *
 from streamers import *
-
-# ==============================================================================
-# TimeLogs
-# ==============================================================================
-
-# class is used to record timing and number of different actions (ie: API requests)
-# - It is imported by TwitchAPI
-# NOTE: all times are in milliseconds
-class TimeLogs():
-
-    def __init__(self, action_categories):
-        self.logs = {} # { request_name: [ {request_obj}, ... ] }
-        for type in action_categories:
-            self.logs[type] = []
-        self.time_initialized = self.__get_current_time()
-
-
-    # Actions ------------------------------------------------------------------
-
-    def start_action(self, action_type):
-
-        # case 0: this action type DNE and needs to be registered
-        if (action_type not in self.logs):
-            self.logs[action_type] = [ {'start': self.__get_current_time(), 'end': 0} ]
-            return
-
-        # case 1: there are no actions on record
-        if (len(self.logs[action_type]) == 0):
-            self.logs[action_type].append({'start': self.__get_current_time(), 'end': 0})
-            return
-
-        # case 2: the latest action is already finished so we can register a new one
-        # -> note: if the current action is not finished yet, we can't do anything
-        current_action = self.logs[action_type][-1]
-        if (current_action['end'] > 0):
-            self.logs[action_type].append({'start': self.__get_current_time(), 'end': 0})
-            return
-
-
-    def end_action(self, action_type):
-
-        if ((action_type not in self.logs) or (len(self.logs[action_type]) == 0)):
-            return
-
-        last_index = len(self.logs[action_type]) - 1
-        if (self.logs[action_type][last_index]['end'] == 0):
-            self.logs[action_type][last_index]['end'] = self.__get_current_time()
-
-
-    def get_time_since_start(self):
-        t = self.__get_current_time() - self.time_initialized
-        return round(t, 2)
-
-
-    # returns the current time in milliseconds
-    def __get_current_time(self):
-        return int(round(time.time() * 1000))
-
-    # Stats --------------------------------------------------------------------
-
-    def print_stats(self):
-        for action_category, actions in self.logs.items():
-            stats = self.__calc_stats_about_action(actions)
-            print("Request: ", action_category)
-            print(" - total: ", stats['n'], "requests")
-            if (len(actions) > 0):
-                print(" - mean: ", stats['mean'], "ms")
-                print(" - std_dev: ", stats['std_dev'], "ms")
-                print(" - min: ", stats['min'], "ms")
-                print(" - max: ", stats['max'], "ms")
-        print("Total Time: ", self.get_time_since_start(), "ms")
-
-    # gets stats about each request in logs
-    def get_stats_from_logs(self):
-        stats = {}
-        for action_category, actions in self.logs.items():
-            if (len(actions) > 0):
-                stats[action_category] = self.__calc_stats_about_action(actions)
-        return stats
-
-    def __calc_stats_about_action(self, actions):
-
-        first_start, last_end = False, False
-        min_val, max_val   = 9999999, -1
-        mean, var, std_dev = 0, 0, 0
-
-        if (len(actions) == 0):
-            return {'n': 0, 'min': 0, 'max': 0, 'std_dev': 0, 'first_start': 0, 'last_end': 0}
-
-        # convert actions from {'start', 'end'} objects into time_per_action
-        times = []
-        for action in actions:
-            if (action['end'] > 0):
-                time_took = action['end'] - action['start']
-                times.append(time_took)
-                min_val = time_took if (time_took < min_val) else min_val
-                max_val = time_took if (time_took > max_val) else max_val
-
-                first_start = action['start'] if ((first_start == False) or (action['start'] < first_start)) else first_start
-                last_end = action['end'] if ((last_end == False) or (action['end'] > last_end)) else last_end
-
-        # calc mean
-        for t in times:
-            mean += t
-        mean = mean / len(times)
-
-        # calc std_dev
-        for t in times:
-            var += (mean - t) ** 2
-        if (len(times) > 1):
-            var = var / (len(times) - 1)
-        std_dev = math.sqrt(var)
-
-        stats = {
-            'n': len(actions),
-            'min': min_val,
-            'max': max_val,
-            'mean': round(mean, 2),
-            'std_dev': round(std_dev, 2),
-            'first_start': first_start,
-            'last_end': last_end
-        }
-        return stats
-
-
-    # File I/O -----------------------------------------------------------------
-
-    # NOTE: TimeLogs is an individual log entry.
-    # -> In order to save and not overwrite previous logs, need to load them as an array and add current TimeLog to the end
-    def export_to_csv(self, filename, content_type, num_items):
-        # get content ready
-        content = self.load_from_csv(filename)
-        content.append({
-            'time_started': self.time_initialized,
-            'time_ended': self.__get_current_time(),
-            'content_type': content_type,
-            'logs': self.get_stats_from_logs(),
-            'num_items': num_items
-        })
-
-        # write file
-        fieldnames = ['time_started', 'time_ended', 'content_type', 'num_items', 'logs']
-        filename = filename if ('.csv' in filename) else filename + '.csv'
-        with open(filename, 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for row in content:
-                writer.writerow(row)
-
-
-    def load_from_csv(self, filename):
-        contents = []
-        filename = filename if ('.csv' in filename) else filename + '.csv'
-        try:
-            with open(filename) as csvfile:
-                reader = csv.DictReader(csvfile)
-                for row in reader:
-                    contents.append(row)
-        except IOError:
-            print(filename, "does not exist yet")
-
-        return contents
+from logs import *
 
 # ==============================================================================
 # Twitch API
@@ -621,20 +460,20 @@ class Scraper():
         return streams
 
     # filters streams to make sure only streams that have N or more viewers are included
-    def __filter_streams_by_views(self, streams_list, filter_amount = 5):
+    def __filter_streams_by_views(self, streams_list, filter_amount = 4):
         filtered_streams = []
         filtered_levels = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
         for stream in streams_list:
             if (stream.views >= 5):
                 filtered_streams.append(stream)
                 filtered_levels[5] += 1
-            elif (stream.views >= 4):
+            elif (stream.views == 4):
                 filtered_levels[4] += 1
-            elif (stream.views >= 3):
+            elif (stream.views == 3):
                 filtered_levels[3] += 1
-            elif (stream.views >= 2):
+            elif (stream.views == 2):
                 filtered_levels[2] += 1
-            elif (stream.views >= 1):
+            elif (stream.views == 1):
                 filtered_levels[1] += 1
             else:
                 filtered_levels[0] += 1

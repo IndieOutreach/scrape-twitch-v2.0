@@ -35,6 +35,10 @@ Flags:
 #### insights.py
 Used for drawing insights from the dataset
 
+#### logs.py
+Contains classes for logging, including TimeLogs() and FilterLogs()
+ - Scraper.py imports these classes
+
 #### tests.py
 Testing script that checks functionality in scraper.py
 
@@ -152,7 +156,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add filter to Scraper.compile_streamers_db() that throws out all livestreams with under 5 viewers (for data volume's sake)
+ - Move TimeLogs() class to logs.py
 
 #### What is still in development? Known Issues?
  - Create a Logs class for writing to/from log files. Specifically, we want to log the filter stats on livestreams
