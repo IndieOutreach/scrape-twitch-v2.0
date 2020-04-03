@@ -110,7 +110,16 @@ class Streamer():
         self.profile_image_url = streamer_obj['profile_image_url']
         self.description       = streamer_obj['description']
         self.language          = streamer_obj['language'] if ('language' in streamer_obj) else self.language
-        self.view_counts.append({'views': streamer_obj['view_count'], 'date': int(time.time())})
+
+
+        # if the most recent view_count is in the last 24 hours, we can just modify that instead of adding a new entry
+        current_time = int(time.time())
+        yesterday = current_time - (60*60*24)
+        if (len(self.get_view_counts_in_range(yesterday, current_time)) > 0):
+            self.view_counts[-1]['views'] = streamer_obj['view_count']
+            self.view_counts[-1]['date'] = current_time
+        else:
+            self.view_counts.append({'views': streamer_obj['view_count'], 'date': current_time })
 
 
     # adds a new entry to follower_count

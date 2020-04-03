@@ -67,6 +67,7 @@ class Insights():
             'have_video_data': {'percentage': 0, 'number': 0},
             'followers_past_day': {'percentage': 0, 'number': 0},
             'num_follower_counts': {},
+            'num_view_counts': {},
             'livestreamed_past_day': {'percentage': 0, 'number': 0},
             'livestreamed_past_week': {'percentage': 0, 'number': 0},
             'has_view_data_past_day': {'percentage': 0, 'number': 0},
@@ -104,6 +105,7 @@ class Insights():
         results['has_view_data_past_day']['number']     = num_view_counts
 
         # Q: How many follower_count objects does a streamer typically have?
+        # Q: How many view_count objects does a streamer typically have?
         # Q: What is the breakdown of languages in the dataset?
         for id in self.streamers.get_ids():
             streamer = self.streamers.get(id)
@@ -112,6 +114,12 @@ class Insights():
                 results['num_follower_counts'][num_objects] += 1
             else:
                 results['num_follower_counts'][num_objects] = 1
+
+            num_objects = len(streamer.view_counts)
+            if (num_objects in results['num_view_counts']):
+                results['num_view_counts'][num_objects] += 1
+            else:
+                results['num_view_counts'][num_objects] = 1
 
             if (streamer.language in results['languages']):
                 results['languages'][streamer.language] += 1
@@ -250,7 +258,8 @@ class Insights():
         for key in median_lists:
             median_lists[key].sort()
             midpoint = int(len(median_lists[key]) / 2)
-            stats[key]['median'] = median_lists[key][midpoint]
+            if (midpoint < len(median_lists[key])):
+                stats[key]['median'] = median_lists[key][midpoint]
 
 
         # SECOND PASS: calculate variance and std_deviation

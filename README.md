@@ -152,13 +152,10 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- rename 'total_views' to 'view_counts' for better naming consistency
-
+ - Modify Streamer.update() so it will update the existing view_count object (if that view count was taken within the last 24 hours) instead of adding a new one every time
 
 #### What is still in development? Known Issues?
  - Streamers that don't have any videos on Twitch will keep appearing in .get_streamers_ids_with_no_video_data()
- - Everytime Scraper.compile_streamers_db() gets called, a 'view_counts' item gets added
-  - modify this so it only adds a new view count object we haven't scraped one in the last 24 hours
  - Streamers.get_ids_with_missing_follower_data() currently hardcodes the dates instead of using a more general Streamer function that is date range aware
 
 #### What's next?
