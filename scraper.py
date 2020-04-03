@@ -560,7 +560,7 @@ class Scraper():
 
         # get all livestreams currently on Twitch
         streams = self.get_all_livestreams(livestreams_limit)
-
+        streams, filtered = self.__filter_streams_by_views(streams)
 
         # loop over livestreams to access streamers
         # -> we can look up streamer profiles in bulk (batches of 100 IDs)
@@ -620,6 +620,29 @@ class Scraper():
             livestreams, cursor = self.twitchAPI.get_livestreams(cursor)
         return streams
 
+    # filters streams to make sure only streams that have N or more viewers are included
+    def __filter_streams_by_views(self, streams_list, filter_amount = 5):
+        filtered_streams = []
+        filtered_levels = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        for stream in streams_list:
+            if (stream.views >= 5):
+                filtered_streams.append(stream)
+                filtered_levels[5] += 1
+            elif (stream.views >= 4):
+                filtered_levels[4] += 1
+            elif (stream.views >= 3):
+                filtered_levels[3] += 1
+            elif (stream.views >= 2):
+                filtered_levels[2] += 1
+            elif (stream.views >= 1):
+                filtered_levels[1] += 1
+            else:
+                filtered_levels[0] += 1
+
+        self.__print('Filtered out ' + str(len(streams_list) - len(filtered_streams)) + ' streams for having fewer than ' + str(filter_amount) + ' streamers')
+        self.__print(str(len(filtered_streams)) + ' streams remain')
+        self.__print(filtered_levels)
+        return filtered_streams, filtered_levels
 
 
     # takes in a list of items l

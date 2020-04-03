@@ -152,9 +152,10 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Modify Streamer.update() so it will update the existing view_count object (if that view count was taken within the last 24 hours) instead of adding a new one every time
+ - Add filter to Scraper.compile_streamers_db() that throws out all livestreams with under 5 viewers (for data volume's sake)
 
 #### What is still in development? Known Issues?
+ - Create a Logs class for writing to/from log files. Specifically, we want to log the filter stats on livestreams
  - Streamers that don't have any videos on Twitch will keep appearing in .get_streamers_ids_with_no_video_data()
  - Streamers.get_ids_with_missing_follower_data() currently hardcodes the dates instead of using a more general Streamer function that is date range aware
 
