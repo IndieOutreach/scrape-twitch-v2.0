@@ -175,3 +175,58 @@ class TimeLogs():
             print(filename, "does not exist yet")
 
         return contents
+
+
+# ==============================================================================
+# FilterLogs
+# ==============================================================================
+
+# a relatively simple class for loading from / exporting to the '/logs/filters.csv' file
+class FilterLogs():
+
+    def __init__(self, filename = False):
+        if (filename != False):
+            self.filename = filename if ('.csv' in filename) else filename + '.csv'
+            self.content = self.load_from_csv(self.filename)
+        else:
+            self.filename = False
+            self.content = []
+        return
+
+    def add_filter(self, num_scraped, num_filtered, view_cutoff, breakdown_obj):
+        self.content.append({
+            'time': int(time.time()),
+            'scraped': num_scraped,
+            'filtered': num_filtered,
+            'view_cutoff': view_cutoff,
+            'breakdown': breakdown_obj
+        })
+
+    def export_to_csv(self, filename = False):
+
+        if (filename == False and self.filename == False):
+            return
+
+        fieldnames = ['time', 'scraped', 'filtered', 'view_cutoff', 'breakdown']
+        filename = filename if (filename != False) else self.filename
+        filename = filename if ('.csv' in filename) else filename + '.csv'
+        with open(self.filename, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in self.content:
+                writer.writerow(row)
+
+
+    def load_from_csv(self, filename = False):
+        contents = []
+        filename = filename if (filename != False) else self.filename
+        filename = filename if ('.csv' in filename) else filename + '.csv'
+        try:
+            with open(filename) as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    contents.append(row)
+        except IOError:
+            print(filename, "does not exist yet")
+
+        return contents

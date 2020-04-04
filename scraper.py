@@ -323,6 +323,7 @@ class Scraper():
         self.twitchAPI = TwitchAPI(credentials['twitch'])
         self.igdbAPI = IGDBAPI(credentials['igdb'])
         self.print_mode_on = True
+        self.filterLogs = FilterLogs()
         self.set_mode('production')
         return
 
@@ -333,15 +334,21 @@ class Scraper():
             self.filepaths = {
                 'games': './data/games.csv',
                 'streamers': './data/streamers.csv',
-                'logs': './logs/runtime.csv'
+                'logs': './logs/runtime.csv',
+                'filterlogs': './logs/filters.csv'
             }
         elif (mode == 'testing'):
             self.mode = 'testing'
             self.filepaths = {
                 'games': './test/games.csv',
                 'streamers': './test/streamers.csv',
-                'logs': './test/runtime.csv'
+                'logs': './test/runtime.csv',
+                'filterlogs': './test/filterlogs.csv'
             }
+
+        # save any log changes and load the new logs object
+        self.filterLogs.export_to_csv()
+        self.filterLogs = FilterLogs(self.filepaths['filterlogs'])
 
     # prints if the mode is right
     def __print(self, message):
@@ -399,7 +406,11 @@ class Scraper():
 
         # get all livestreams currently on Twitch
         streams = self.get_all_livestreams(livestreams_limit)
-        streams, filtered = self.__filter_streams_by_views(streams)
+        num_all_streams = len(streams)
+        streams, view_breakdowns = self.__filter_streams_by_views(streams, 4)
+        num_filtered = num_all_streams - len(streams)
+        self.filterLogs.add_filter(num_all_streams, num_filtered, 4, view_breakdowns)
+        self.filterLogs.export_to_csv()
 
         # loop over livestreams to access streamers
         # -> we can look up streamer profiles in bulk (batches of 100 IDs)
@@ -464,8 +475,10 @@ class Scraper():
         filtered_streams = []
         filtered_levels = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
         for stream in streams_list:
-            if (stream.views >= 5):
+            if (stream.views >= filter_amount):
                 filtered_streams.append(stream)
+
+            if (stream.views >= 5):
                 filtered_levels[5] += 1
             elif (stream.views == 4):
                 filtered_levels[4] += 1

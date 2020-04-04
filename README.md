@@ -153,13 +153,22 @@ Keeps track of actions and requests made by scraper.py
  - `logs` - an object with the stats about the procedure's runtime
   - of form: `{ action_type: {'n': NUM_REQUESTS, 'total': TOTAL_TIME_TAKEN, 'mean': MEAN_TIME_PER_REQUEST, 'std_dev': STD_DEV_OF_TIME_PER_REQUEST, 'min': MIN_TIME_FOR_A_REQUEST, 'max': MAX_TIME_FOR_A_REQUEST, 'first_start': UNIX_EPOCH_TIMESTAMP_OF_WHEN_FIRST_REQUEST_STARTED, 'last_end': UNIX_EPOCH_TIMESTAMP_OF_WHEN_LAST_REQUEST_ENDED}, ... }`
 
+
+#### Livestream Filters -> filters.csv
+ - `time` - the unix epoch date (in seconds) that the filter was recorded
+ - `scraped` - the total number of livestreams that were originally scraped (pre-filter)
+ - `filtered` - the total number of livestreams that were removed due to the filter
+  - Note: If you calculate `scraped - filtered`, you can calculate the number of livestreams that made it through the filter
+ - `view_cutoff` - "Filter out all livestreams with fewer than X views"
+ - `breakdown` - a dict that shows {# views -> # livestreams in batch}
+  - Note: the largest key in this dict works as a ">= key" function. IE: if 5 is the largest key, then breakdown[5] = number of livestreams that had 5 or more viewers
+
 ## Development Notes
 
 #### What is new in this commit?
- - Move TimeLogs() class to logs.py
+ - Create FilterLogs for recording the filtering process done in Scraper.compile_streamers_db()
 
 #### What is still in development? Known Issues?
- - Create a Logs class for writing to/from log files. Specifically, we want to log the filter stats on livestreams
  - Streamers that don't have any videos on Twitch will keep appearing in .get_streamers_ids_with_no_video_data()
  - Streamers.get_ids_with_missing_follower_data() currently hardcodes the dates instead of using a more general Streamer function that is date range aware
 
@@ -176,3 +185,4 @@ Keeps track of actions and requests made by scraper.py
  - Add `reset_logs` function to Scraper so you can re-use the same Scraper instance between different scraping procedures and not double-up on log data
  - Build controller for scraping in production - maybe a server that dispatches requests to threads?
  - Add timeout handling to API requests
+ - Add a caching system for API requests so we can spoof API requests
