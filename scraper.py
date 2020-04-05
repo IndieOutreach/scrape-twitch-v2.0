@@ -457,6 +457,7 @@ class Scraper():
             streamers.export_to_csv(self.filepaths['streamers'])
 
             # log a snapshot of the data
+            self.insights.reload_data()
             insights = self.insights.get_snapshot_of_streamers_db()
             print('\n\nSnapshot of the Database:')
             for key, value in insights.items():

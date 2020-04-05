@@ -28,13 +28,19 @@ class Insights():
     # loads datasets
     def set_dataset(self, mode):
         if (mode == 'production'):
+            self.mode = 'production'
             self.streamers = Streamers('./data/streamers.csv')
             self.games = Games('./data/games.csv')
             self.streamerslogs = GeneralLogs('./logs/streamer_insights.csv')
         elif (mode == 'testing'):
+            self.mode = 'testing'
             self.streamers = Streamers('./test/streamers.csv')
             self.games = Games('./test/games.csv')
             self.streamerlogs = GeneralLogs('./test/streamer_insights.csv')
+
+    def reload_data(self):
+        self.set_dataset(self.mode)
+
 
     def set_logging(self, mode):
         self.logging_mode = mode
@@ -66,6 +72,8 @@ class Insights():
 
         # variables
         num_streamers = len(self.streamers.get_ids())
+        if (num_streamers == 0):
+            return results
         time_today = int(time.time())
         time_yesterday = time_today - (60*60*24) # <- seconds*minutes*hours
         time_week = time_today - (60*60*24*7)

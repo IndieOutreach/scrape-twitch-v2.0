@@ -203,10 +203,10 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Convert streamerinsights.csv naming to streamer_insights.csv
-
+ - Fix bug in Scraper.compile_streamers_db() where insights was being loaded before the new streamers were added to the database, so insights weren't representative of the new changes made.
 
 #### What is still in development? Known Issues?
+ - The streamers.csv file is going to get way too large as the dataset grows. It needs to be broken up
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
@@ -216,7 +216,6 @@ Keeps track of actions and requests made by scraper.py
  - Compile the [keyword, genre, theme, platform] alias tables for IGDB
  - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
  - convert tests.py to use argparse for consistency
- - move TimeLogs over to its own file timelogs.py and add functions for calculating stats from those logs
  - Add `reset_logs` function to Scraper so you can re-use the same Scraper instance between different scraping procedures and not double-up on log data
  - Build controller for scraping in production - maybe a server that dispatches requests to threads?
  - Add timeout handling to API requests
