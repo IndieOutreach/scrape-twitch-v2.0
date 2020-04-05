@@ -30,11 +30,11 @@ class Insights():
         if (mode == 'production'):
             self.streamers = Streamers('./data/streamers.csv')
             self.games = Games('./data/games.csv')
-            self.streamerslogs = GeneralLogs('./logs/streamerinsights.csv')
+            self.streamerslogs = GeneralLogs('./logs/streamer_insights.csv')
         elif (mode == 'testing'):
             self.streamers = Streamers('./test/streamers.csv')
             self.games = Games('./test/games.csv')
-            self.streamerlogs = GeneralLogs('./test/streamerinsights.csv')
+            self.streamerlogs = GeneralLogs('./test/streamer_insights.csv')
 
     def set_logging(self, mode):
         self.logging_mode = mode

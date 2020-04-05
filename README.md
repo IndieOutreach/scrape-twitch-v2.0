@@ -56,12 +56,18 @@ Format:
 
 #### /data
 Folder contains all the .csv files that scraper compiles
+ - `games.csv`
+ - `streamers.csv`
+ - `streamers_missing_videos.csv`
 
 #### /test
 Folder contains all the .csv files that are generated during testing
 
 #### /logs
 Folder contains the .csv log files generated during scraping
+ - `filters.csv`
+ - `runtime.csv`
+ - `streamer_insights.csv`
 
 ## Raw Data
 Data that is scraped and used or stored.
@@ -163,7 +169,7 @@ Keeps track of actions and requests made by scraper.py
  - `breakdown` - a dict that shows {# views -> # livestreams in batch}
   - Note: the largest key in this dict works as a ">= key" function. IE: if 5 is the largest key, then breakdown[5] = number of livestreams that had 5 or more viewers
 
-#### Snapshot Stats of Streamers DB -> streamerinsights.csv
+#### Snapshot Stats of Streamers DB -> streamer_insights.csv
  - `time` - the unix epoch date (in seconds) the insight was recorded
  - `have_video_data` - breakdown of how many streamers in the dataset have video data
   - form: {'percentage': double, 'number': int}
@@ -197,7 +203,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add StreamersMissingVideos class to Streamers to prevent Scraper.add_videos_to_streamers_db() from repeating API queries for streamers that don't have any video data.
+ - Convert streamerinsights.csv naming to streamer_insights.csv
 
 
 #### What is still in development? Known Issues?
