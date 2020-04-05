@@ -15,9 +15,10 @@ import math
 import requests
 import argparse
 
+from logs import *
 from games import *
 from streamers import *
-from logs import *
+from insights import *
 
 # ==============================================================================
 # Twitch API
@@ -337,6 +338,9 @@ class Scraper():
                 'logs': './logs/runtime.csv',
                 'filterlogs': './logs/filters.csv'
             }
+            self.insights = Insights()
+            self.insights.set_logging(True)
+
         elif (mode == 'testing'):
             self.mode = 'testing'
             self.filepaths = {
@@ -345,6 +349,9 @@ class Scraper():
                 'logs': './test/runtime.csv',
                 'filterlogs': './test/filterlogs.csv'
             }
+            self.insights = Insights()
+            self.insights.set_dataset('testing')
+            self.insights.set_logging(True)
 
         # save any log changes and load the new logs object
         self.filterLogs.export_to_csv()
@@ -439,10 +446,19 @@ class Scraper():
                 streamers.add_stream_data(stream_lookup[user_id])
 
         if (self.mode == 'production'):
+
+            # log request stats
+            print('\n\nRequest Logs')
             self.twitchAPI.request_logs.print_stats()
             num_streamers = len(streams)
             self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'streamers', num_streamers)
             streamers.export_to_csv(self.filepaths['streamers'])
+
+            # log a snapshot of the data
+            insights = self.insights.get_snapshot_of_streamers_db()
+            print('\n\nSnapshot of the Database:')
+            for key, value in insights.items():
+                print(key, "\n ->", value, "\n")
         return streamers
 
 
@@ -491,7 +507,7 @@ class Scraper():
             else:
                 filtered_levels[0] += 1
 
-        self.__print('Filtered out ' + str(len(streams_list) - len(filtered_streams)) + ' streams for having fewer than ' + str(filter_amount) + ' streamers')
+        self.__print('Filtered out ' + str(len(streams_list) - len(filtered_streams)) + ' streams for having fewer than ' + str(filter_amount) + ' viewers')
         self.__print(str(len(filtered_streams)) + ' streams remain')
         self.__print(filtered_levels)
         return filtered_streams, filtered_levels

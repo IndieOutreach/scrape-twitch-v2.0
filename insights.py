@@ -10,6 +10,7 @@
 import sys
 import math
 
+from logs import *
 from games import *
 from streamers import *
 
@@ -21,6 +22,7 @@ class Insights():
 
     def __init__(self):
         self.set_dataset('production')
+        self.logging_mode = False
         return
 
     # loads datasets
@@ -28,26 +30,14 @@ class Insights():
         if (mode == 'production'):
             self.streamers = Streamers('./data/streamers.csv')
             self.games = Games('./data/games.csv')
+            self.streamerslogs = GeneralLogs('./logs/streamerinsights.csv')
         elif (mode == 'testing'):
             self.streamers = Streamers('./test/streamers.csv')
-            self.games = Games('./data/games.csv')
+            self.games = Games('./test/games.csv')
+            self.streamerlogs = GeneralLogs('./test/streamerinsights.csv')
 
-
-    # Streamers ----------------------------------------------------------------
-
-    # Questions this function answers:
-    # - Views Data
-    #   -> what is the typical number of view_count objects for a streamer?
-    # - Stream History
-    #   -> how many games have been played?
-    #   -> how many livestreams is typical for each streamer?
-    def f(self):
-
-        print('.get_general_streamer_stats() is under construction. Please check back later')
-        return
-
-        for id in self.streamers.get_ids():
-            print(id)
+    def set_logging(self, mode):
+        self.logging_mode = mode
 
 
     # Streamers: Scraping ------------------------------------------------------
@@ -61,7 +51,7 @@ class Insights():
     # - How many follower_count objects does a streamer typically have?
     # - What is the breakdown of languages used by streamers?
     # - What is the average number of games livestreamed? in videos?
-    def get_general_streamer_stats(self):
+    def get_snapshot_of_streamers_db(self):
 
         results = {
             'have_video_data': {'percentage': 0, 'number': 0},
@@ -137,6 +127,11 @@ class Insights():
 
         # Q: What is the total number of streamers in dataset? videos? livestreams? games?
         results['totals'] = self.get_totals()
+
+        # log this insight
+        if (self.logging_mode == True):
+            self.streamerslogs.add(results)
+            self.streamerslogs.export_to_csv()
         return results
 
     # gets data about Streamer.stream_history values
@@ -184,8 +179,8 @@ class Insights():
             livestreams, videos = streamer.get_games_played()
             lookup['games_per_streamer_from_videos'][id]      = len(videos) # <- use so we don't have to call .get_games_played() on second pass
             lookup['games_per_streamer_from_livestreams'][id] = len(livestreams)
-            lookup['livestreams_per_streamer'][id]       = 0
-            lookup['videos_per_streamer'][id]            = 0
+            lookup['livestreams_per_streamer'][id]            = 0
+            lookup['videos_per_streamer'][id]                 = 0
             old_num_videos      = stats['videos_per_streamer']['num_streamers'] # <- use these to make sure we don't double count streamer
             old_num_livestreams = stats['livestreams_per_streamer']['num_streamers']
 
@@ -266,9 +261,9 @@ class Insights():
         for id in self.streamers.get_ids():
             streamer = self.streamers.get(id)
 
-            num_livestreams                    = lookup['livestreams_per_streamer'][id] if (id in lookup['livestreams_per_streamer']) else False
+            num_livestreams                         = lookup['livestreams_per_streamer'][id] if (id in lookup['livestreams_per_streamer']) else False
             num_games_per_streamer_from_livestreams = lookup['games_per_streamer_from_livestreams'][id] if (id in lookup['games_per_streamer_from_livestreams']) else False
-            num_videos                         = lookup['videos_per_streamer'][id] if (id in lookup['videos_per_streamer']) else False
+            num_videos                              = lookup['videos_per_streamer'][id] if (id in lookup['videos_per_streamer']) else False
             num_games_per_streamer_from_videos      = lookup['games_per_streamer_from_videos'][id] if (id in lookup['games_per_streamer_from_videos']) else False
 
             # calculate variances using formula: var = SUM{ (mean - observed)^2 }
@@ -294,9 +289,9 @@ class Insights():
             stats['games_per_streamer_from_videos']['std_dev'] = stats['games_per_streamer_from_videos']['std_dev'] / (stats['games_per_streamer_from_videos']['num_streamers'] - 1)
 
         # convert variance into standard deviation by square rooting it
-        stats['livestreams_per_streamer']['std_dev']       = math.sqrt(stats['livestreams_per_streamer']['std_dev'])
+        stats['livestreams_per_streamer']['std_dev']            = math.sqrt(stats['livestreams_per_streamer']['std_dev'])
         stats['games_per_streamer_from_livestreams']['std_dev'] = math.sqrt(stats['games_per_streamer_from_livestreams']['std_dev'])
-        stats['videos_per_streamer']['std_dev']            = math.sqrt(stats['videos_per_streamer']['std_dev'])
+        stats['videos_per_streamer']['std_dev']                 = math.sqrt(stats['videos_per_streamer']['std_dev'])
         stats['games_per_streamer_from_videos']['std_dev']      = math.sqrt(stats['games_per_streamer_from_videos']['std_dev'])
 
 
@@ -371,9 +366,10 @@ class Insights():
     # returns the total number of videos, livestreams etc in the dataset
     def get_totals(self):
 
-        stats = {'num_streamers': 0, 'num_livestreams': 0, 'num_videos': 0, 'num_game_ids': 0}
+        stats = {'num_streamers': 0, 'num_livestreams': 0, 'num_videos': 0, 'games_from_livestreams': 0, 'games_from_videos': 0}
         stats['num_streamers'] = len(self.streamers.get_ids())
-        games = {}
+        games_from_livestreams = {}
+        games_from_videos = {}
 
         for id in self.streamers.get_ids():
             streamer = self.streamers.get(id)
@@ -383,12 +379,13 @@ class Insights():
 
             for game in livestream_history:
                 stats['num_livestreams'] += len(livestream_history[game]['dates'])
-                games[game] = 1
+                games_from_livestreams[game] = 1
             for game in video_history:
                 stats['num_videos'] += len(video_history[game]['dates'])
-                games[game] = 1
+                games_from_videos[game] = 1
 
-        stats['num_game_ids'] = len(games)
+        stats['games_from_livestreams'] = len(games_from_livestreams)
+        stats['games_from_videos'] = len(games_from_videos)
         return stats
 
 
@@ -402,7 +399,7 @@ def print_dict(d):
 
 def run():
     insights = Insights()
-    results = insights.get_general_streamer_stats()
+    results = insights.get_snapshot_of_streamers_db()
     print_dict(results)
 
 # Run --------------------------------------------------------------------------

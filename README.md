@@ -36,7 +36,7 @@ Flags:
 Used for drawing insights from the dataset
 
 #### logs.py
-Contains classes for logging, including TimeLogs() and FilterLogs()
+Contains classes for logging, including TimeLogs(), FilterLogs(), and GeneralLogs()
  - Scraper.py imports these classes
 
 #### tests.py
@@ -163,17 +163,47 @@ Keeps track of actions and requests made by scraper.py
  - `breakdown` - a dict that shows {# views -> # livestreams in batch}
   - Note: the largest key in this dict works as a ">= key" function. IE: if 5 is the largest key, then breakdown[5] = number of livestreams that had 5 or more viewers
 
+#### Snapshot Stats of Streamers DB -> streamerinsights.csv
+ - `time` - the unix epoch date (in seconds) the insight was recorded
+ - `have_video_data` - breakdown of how many streamers in the dataset have video data
+  - form: {'percentage': double, 'number': int}
+ - `followers_past_day` - breakdown of how many streamers in the dataset have follower data from the past day
+  - form: {'percentage': double, 'number': int}
+ - `num_follower_counts` - a dictionary that shows a breakdown of how many streamers in the dataset have a certain number of follower_count objects
+  - form: { num_follower_count_objects -> number_of_streamers_in_dataset }
+ - `num_view_counts` - a dictionary that shows the breakdown of how many streamers in the dataset have a certain number of view_count objects
+  - form: { num_view_count_objects -> number_of_streamers_in_dataset }
+ - `livestreamed_past_day` - shows what portion of streamers in the dataset have livestreamed in the past day
+  - form: { 'percentage': double, 'number': int }
+ - `livestreamed_past_week` - shows what portion of streamers in the dataset have livestreamed in the past week
+  - form: { 'percentage': double, 'number': int }
+ - `has_view_data_past_day` - shows what portion of streamers in the dataset have view_count objects from the past day
+  - form: { 'percentage': double, 'number': int }
+ - `languages` - a dictionary showing how many streamers in the dataset use different languages
+  - form: { language (str) -> number of streamers (int) }
+ - `livestreams_per_streamer` - average number of livestreams per streamer
+  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+ - `games_per_streamer_from_livestreams` - average number of games played by a streamer (in their livestreams history)
+  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+ - `videos_per_streamer` - average number of videos per streamer with video data
+  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+ - `games_per_streamer_from_videos` - average number of games played by a streamer (in their videos history)
+  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+ - `views_per_stream` - average number of views per livestream of all streamers in the dataset
+  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+ - `totals` - shows the total number of different items of interest in the dataset
+  - form: { 'num_streamers': int, 'num_livestreams': int, 'num_videos': int, 'games_from_livestreams': int, 'games_from_videos': int}
+
 ## Development Notes
 
 #### What is new in this commit?
- - Create FilterLogs for recording the filtering process done in Scraper.compile_streamers_db()
+ - Scraper.compile_streamers_db() will now automatically call Insights.get_snapshot_of_streamers_db() and log it
 
 #### What is still in development? Known Issues?
  - Streamers that don't have any videos on Twitch will keep appearing in .get_streamers_ids_with_no_video_data()
  - Streamers.get_ids_with_missing_follower_data() currently hardcodes the dates instead of using a more general Streamer function that is date range aware
 
 #### What's next?
- - Add logging for insights
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 
 #### Future Roadmap

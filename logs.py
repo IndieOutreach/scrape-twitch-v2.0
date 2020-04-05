@@ -230,3 +230,77 @@ class FilterLogs():
             print(filename, "does not exist yet")
 
         return contents
+
+# ==============================================================================
+# GeneralLogs
+# ==============================================================================
+
+class GeneralLogs():
+
+    def __init__(self, filename = False):
+        if (filename != False):
+            self.filename = filename
+            self.content = self.load_from_csv(self.filename)
+        else:
+            self.filename = False
+            self.content = False
+        return
+
+    # adds an item to contents
+    def add(self, item):
+        item['time'] = int(time.time())
+        self.content.append(item)
+
+    # returns all fieldnames that appear in content
+    def get_fieldnames(self):
+        fieldnames = ['time']
+        for row in self.content:
+            for key in row:
+                if (key not in fieldnames):
+                    fieldnames.append(key)
+        fieldnames.sort()
+        return fieldnames
+
+    # returns
+    def get_contents_with_all_fields(self, fieldnames = False):
+        fieldnames = self.get_fieldnames() if (fieldnames == False) else fieldnames
+        contents = []
+        for row in self.content:
+            item = {}
+            for key in fieldnames:
+                if (key in row):
+                    item[key] = row[key]
+                else:
+                    item[key] = '' # <- Null value
+            contents.append(item)
+        return contents
+
+
+    def export_to_csv(self, filename = False):
+
+        if (filename == False and self.filename == False):
+            return
+
+        fieldnames = self.get_fieldnames()
+        filename = filename if (filename != False) else self.filename
+        filename = filename if ('.csv' in filename) else filename + '.csv'
+        with open(self.filename, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in self.get_contents_with_all_fields(fieldnames):
+                writer.writerow(row)
+
+
+    def load_from_csv(self, filename = False):
+        contents = []
+        ilename = filename if (filename != False) else self.filename
+        filename = filename if ('.csv' in filename) else filename + '.csv'
+        try:
+            with open(filename) as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    contents.append(row)
+        except IOError:
+            print(filename, "does not exist yet")
+
+        return contents
