@@ -335,6 +335,7 @@ class Scraper():
             self.filepaths = {
                 'games': './data/games.csv',
                 'streamers': './data/streamers.csv',
+                'streamers_missing_videos': './data/streamers_missing_videos.csv',
                 'logs': './logs/runtime.csv',
                 'filterlogs': './logs/filters.csv'
             }
@@ -346,6 +347,7 @@ class Scraper():
             self.filepaths = {
                 'games': './test/games.csv',
                 'streamers': './test/streamers.csv',
+                'streamers_missing_videos': './test/streamers_missing_videos.csv',
                 'logs': './test/runtime.csv',
                 'filterlogs': './test/filterlogs.csv'
             }
@@ -407,7 +409,7 @@ class Scraper():
     def compile_streamers_db(self, livestreams_limit = 9999999):
 
         # load existing streamers
-        streamers = Streamers(self.filepaths['streamers'])
+        streamers = Streamers(self.filepaths['streamers'], self.filepaths['streamers_missing_videos'])
         self.__print('Starting with ' + str(len(streamers.get_ids())) + ' streamers from CSV file')
 
 
@@ -537,29 +539,40 @@ class Scraper():
     # -> user can specify the number of streamers that get videos added in this execution
     def add_videos_to_streamers_db(self, video_limit = 9999999, streamer_limit = 9999999):
 
-        streamers = Streamers(self.filepaths['streamers'])
-        streamer_ids = streamers.get_ids_with_no_video_data()
+        streamers = Streamers(self.filepaths['streamers'], self.filepaths['streamers_missing_videos'])
+        streamer_ids = streamers.get_ids_that_need_video_data()
 
         if (len(streamer_ids) == 0):
             return
 
         streamers_to_scrape = streamer_limit if (len(streamer_ids) > streamer_limit) else len(streamer_ids)
         self.__print('scraping videos for ' + str(streamers_to_scrape) + ' streamers (out of ' + str(len(streamer_ids)) + ' possible)')
-
+        self.__print(str(len(streamers.known_missing_videos.get_ids())) + ' streamers have been removed because they appeared in streamers_missing_videos.csv')
 
         for i in range(streamers_to_scrape):
             streamer_id = streamer_ids[i]
             videos = self.get_all_videos_for_streamer(streamer_id, video_limit)
             self.__print(str(i) + ': streamer=' + str(streamer_id) + ', #videos=' + str(len(videos)))
-            for video in videos:
-                streamers.add_stream_data(video)
+
+            if (len(videos) == 0):
+                streamers.add_streamer_to_missing_videos_collection(streamer_id)
+            else:
+                for video in videos:
+                    streamers.add_stream_data(video)
 
 
         if (self.mode == 'production'):
+
+            # save logs
             self.twitchAPI.request_logs.print_stats()
             num_streamers = streamer_limit if (len(streamer_ids) > streamer_limit) else len(streamer_ids)
             self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'videos', streamers_to_scrape)
+
+            # save streamers object
             streamers.export_to_csv(self.filepaths['streamers'])
+
+            # save missing video data
+            streamers.known_missing_videos.export_to_csv(self.filepaths['streamers_missing_videos'])
         return streamers
 
 
@@ -584,7 +597,7 @@ class Scraper():
     # loads all the streamers from the streamers.csv file and searches for follower data for them
     def add_followers_to_streamers_db(self, limit = 9999999):
 
-        streamers = Streamers(self.filepaths['streamers'])
+        streamers = Streamers(self.filepaths['streamers'], self.filepaths['streamers_missing_videos'])
         streamer_ids = streamers.get_ids_with_missing_follower_data()
 
         # we can't add followers if there are no streamer profiles to add to

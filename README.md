@@ -197,11 +197,10 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Scraper.compile_streamers_db() will now automatically call Insights.get_snapshot_of_streamers_db() and log it
+ - Add StreamersMissingVideos class to Streamers to prevent Scraper.add_videos_to_streamers_db() from repeating API queries for streamers that don't have any video data.
+
 
 #### What is still in development? Known Issues?
- - Streamers that don't have any videos on Twitch will keep appearing in .get_streamers_ids_with_no_video_data()
- - Streamers.get_ids_with_missing_follower_data() currently hardcodes the dates instead of using a more general Streamer function that is date range aware
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs

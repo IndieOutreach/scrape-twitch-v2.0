@@ -273,10 +273,12 @@ class Streamer():
 
 class Streamers():
 
-    def __init__(self, filename = False):
+    def __init__(self, filename = False, missing_streamers_filename = False):
         self.streamers = {}
+        self.known_missing_videos = StreamersMissingVideos(missing_streamers_filename)
         if (filename):
             self.load_from_csv(filename)
+
 
     # sets streamers to be empty, effectively wiping the Streamers object
     def reset(self):
@@ -297,7 +299,7 @@ class Streamers():
         ids.sort()
         return ids
 
-    # returns a list of streamer IDs that do not have any streamer data on record
+    # returns a list of ALL streamer IDs that do not have any video data on record
     def get_ids_with_no_video_data(self):
         ids = []
         for id, streamer in self.streamers.items():
@@ -308,6 +310,14 @@ class Streamers():
         ids.sort()
         return ids
 
+    # returns a list of streamer IDs that do not have video data on record.
+    # -> different from .get_ids_with_no_video_data() because it removes streamers that are in self.known_missing_videos
+    def get_ids_that_need_video_data(self):
+        ids = []
+        for id in self.get_ids_with_no_video_data():
+            if (not self.known_missing_videos.check_for_streamer(id)):
+                ids.append(id)
+        return ids
 
     # returns a list of all streamer IDs that do not have follower data from the last day
     def get_ids_with_missing_follower_data(self):
@@ -366,6 +376,9 @@ class Streamers():
         if (streamer_id in self.streamers):
             self.streamers[streamer_id].add_follower_data(followers)
 
+    # adds a streamer to self.known_missing_videos
+    def add_streamer_to_missing_videos_collection(self, streamer_id):
+        self.known_missing_videos.add(streamer_id)
 
     # File I/O -----------------------------------------------------------------
 
@@ -537,3 +550,63 @@ class Streamers():
             if (obj1['date'] != obj2['date']):
                 return False
         return True
+
+
+# ==============================================================================
+# StreamersMissingVideos
+# ==============================================================================
+
+# Problem:
+# - When we call Scraper.add_videos_to_streamers_db(), it calls Streamers.get_ids_with_no_video_data()
+# - this function will return a list of *all* streamer IDs in our dataset where the streamer doesn't have video data
+# - However, some streamers don't have videos saved to Twitch, so their IDs will always be returned in the .get_streamers_ids_with_no_video_data() call
+# Solution:
+# - Use the StreamersMissingVideos() class to keep track of these streamer IDs
+# - store them in /data/streamers_missing_videos.csv
+class StreamersMissingVideos():
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.streamers = self.load_from_csv(filename)
+
+    def add(self, streamer_id):
+        self.streamers[streamer_id] = {'streamer_id': streamer_id, 'time': int(time.time())}
+
+    # returns True if a streamer exists in StreamersMissingVideos
+    def check_for_streamer(self, streamer_id):
+        if (streamer_id in self.streamers):
+            return True
+        return False
+
+    def get_ids(self):
+        ids = []
+        for key in self.streamers:
+            ids.append(key)
+        return ids
+
+    def export_to_csv(self, filename = False):
+        if (filename == False):
+            filename = self.filename
+
+        fieldnames = ['streamer_id', 'time']
+        with open(filename, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for streamer_id in self.streamers:
+                writer.writerow(self.streamers[streamer_id])
+
+    def load_from_csv(self, filename = False):
+        if (filename == False):
+            return {}
+
+        contents = {}
+        try:
+            with open(filename) as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    row['streamer_id'] = int(row['streamer_id'])
+                    id = row['streamer_id']
+                    contents[id] = row
+        except IOError:
+            print(filename, "does not exist yet")
+        return contents

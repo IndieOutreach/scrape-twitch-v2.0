@@ -293,7 +293,7 @@ class GeneralLogs():
 
     def load_from_csv(self, filename = False):
         contents = []
-        ilename = filename if (filename != False) else self.filename
+        filename = filename if (filename != False) else self.filename
         filename = filename if ('.csv' in filename) else filename + '.csv'
         try:
             with open(filename) as csvfile:
