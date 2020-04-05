@@ -20,8 +20,8 @@ from streamers import *
 
 class Insights():
 
-    def __init__(self):
-        self.set_dataset('production')
+    def __init__(self, dataset = 'production'):
+        self.set_dataset(dataset)
         self.logging_mode = False
         return
 

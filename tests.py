@@ -246,8 +246,7 @@ def test_complile_games_db(credentials):
     ]
     tests = get_empty_test(test_names)
     known_missing_indexes = [165, 315, 577, 579, 580, 581]
-    scraper = Scraper(credentials)
-    scraper.set_mode('testing')
+    scraper = Scraper(credentials, 'testing')
     scraper.set_print_mode(False)
     filename = './test/games.csv'
     wipe_file(filename)
@@ -357,8 +356,7 @@ def test_scrape_streamers(credentials):
     ]
     tests = get_empty_test(test_names)
 
-    scraper = Scraper(credentials)
-    scraper.set_mode('testing')
+    scraper = Scraper(credentials, 'testing')
     scraper.set_print_mode(False)
 
     filename = './test/streamers.csv'
@@ -402,7 +400,7 @@ def validate_streamer(streamer):
 
     streamer = streamer.to_dict()
     if (
-        (streamer['id'] <= 0)                                                 or
+        (streamer['streamer_id'] <= 0)                                        or
         (len(streamer['login']) <= 0)                                         or
         (len(streamer['display_name']) <= 0)                                  or
         ('https://static-cdn.jtvnw.net' not in streamer['profile_image_url']) or
@@ -516,8 +514,7 @@ def test_add_followers(credentials):
     ]
     tests = get_empty_test(test_names)
 
-    scraper = Scraper(credentials)
-    scraper.set_mode('testing')
+    scraper = Scraper(credentials, 'testing')
     scraper.set_print_mode(False)
 
     filename = './test/streamers.csv'
@@ -575,8 +572,7 @@ def test_add_videos(credentials):
     ]
     tests = get_empty_test(test_names)
 
-    scraper = Scraper(credentials)
-    scraper.set_mode('testing')
+    scraper = Scraper(credentials, 'testing')
     scraper.set_print_mode(False)
 
     filename = './test/streamers.csv'

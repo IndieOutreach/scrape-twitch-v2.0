@@ -203,11 +203,11 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Fix bug in Scraper.compile_streamers_db() where insights was being loaded before the new streamers were added to the database, so insights weren't representative of the new changes made.
+ - Change Streamer.id to Streamer.streamer_id (in order to make room for new ID given by IndieOutreach)
 
 #### What is still in development? Known Issues?
  - The streamers.csv file is going to get way too large as the dataset grows. It needs to be broken up
-
+ - Create unique io_ids for each streamer that denote what order they were scraped in. These IDs are unique and permanent, so once a streamer gets an ID it doesn't change.
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 

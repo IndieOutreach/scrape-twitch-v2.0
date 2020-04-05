@@ -63,7 +63,7 @@ class Streamer():
 
     def __init__(self, streamer_obj, from_csv = False):
         if (from_csv):
-            self.id                = int(streamer_obj['id'])
+            self.streamer_id       = int(streamer_obj['streamer_id'])
             self.login             = streamer_obj['login']
             self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
@@ -74,7 +74,7 @@ class Streamer():
             self.stream_history    = self.__load_stream_history(streamer_obj['stream_history'])
 
         else:
-            self.id                = int(streamer_obj['id'])
+            self.streamer_id       = int(streamer_obj['id'])
             self.login             = streamer_obj['login']
             self.display_name      = streamer_obj['display_name']
             self.profile_image_url = streamer_obj['profile_image_url']
@@ -247,7 +247,7 @@ class Streamer():
 
     def to_dict(self):
         obj = {
-            'id': self.id,
+            'streamer_id': self.streamer_id,
             'login': self.login,
             'display_name': self.display_name,
             'profile_image_url': self.profile_image_url,
@@ -384,7 +384,7 @@ class Streamers():
 
     def export_to_csv(self, filename):
         fieldnames = [
-            'id', 'login', 'display_name', 'profile_image_url', 'view_counts', 'description',
+            'streamer_id', 'login', 'display_name', 'profile_image_url', 'view_counts', 'description',
             'follower_counts', 'language', 'stream_history'
         ]
         filename = filename if ('.csv' in filename) else filename + '.csv'
@@ -401,7 +401,7 @@ class Streamers():
                 reader = csv.DictReader(csvfile)
                 for row in reader:
                     streamer = Streamer(row, True)
-                    self.streamers[streamer.id] = streamer
+                    self.streamers[streamer.streamer_id] = streamer
         except IOError:
             print(filename, "does not exist yet")
 

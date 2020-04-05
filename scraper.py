@@ -104,7 +104,6 @@ class TwitchAPI():
         if (r.status_code == 200):
             data = r.json()
             for streamer in data['data']:
-                # streamer['follower_counts'] = self.get_followers(streamer['id'])
                 streamer['follower_counts'] = []
                 streamer['id'] = int(streamer['id'])
                 streamers.append(streamer)
@@ -320,12 +319,12 @@ class IGDBAPI():
 
 class Scraper():
 
-    def __init__(self, credentials):
+    def __init__(self, credentials, mode = 'production'):
         self.twitchAPI = TwitchAPI(credentials['twitch'])
         self.igdbAPI = IGDBAPI(credentials['igdb'])
         self.print_mode_on = True
         self.filterLogs = FilterLogs()
-        self.set_mode('production')
+        self.set_mode(mode)
         return
 
     # lets user activate a different mode
@@ -351,8 +350,7 @@ class Scraper():
                 'logs': './test/runtime.csv',
                 'filterlogs': './test/filterlogs.csv'
             }
-            self.insights = Insights()
-            self.insights.set_dataset('testing')
+            self.insights = Insights('testing')
             self.insights.set_logging(True)
 
         # save any log changes and load the new logs object
