@@ -63,6 +63,7 @@ class Streamer():
 
     def __init__(self, streamer_obj, from_csv = False):
         if (from_csv):
+            self.io_id             = int(streamer_obj['io_id'])
             self.streamer_id       = int(streamer_obj['streamer_id'])
             self.login             = streamer_obj['login']
             self.display_name      = streamer_obj['display_name']
@@ -74,6 +75,7 @@ class Streamer():
             self.stream_history    = self.__load_stream_history(streamer_obj['stream_history'])
 
         else:
+            self.io_id             = int(streamer_obj['io_id'])
             self.streamer_id       = int(streamer_obj['id'])
             self.login             = streamer_obj['login']
             self.display_name      = streamer_obj['display_name']
@@ -247,6 +249,7 @@ class Streamer():
 
     def to_dict(self):
         obj = {
+            'io_id': self.io_id,
             'streamer_id': self.streamer_id,
             'login': self.login,
             'display_name': self.display_name,
@@ -353,7 +356,19 @@ class Streamers():
                 ids.append(id)
         return ids
 
+    # returns a list of all of the IndieOutreach IDs in this Streamers object
+    def get_used_io_ids(self):
+        ids = []
+        for streamer_id, streamer in self.streamers.items():
+            ids.append(streamer.io_id)
+        ids.sort()
+        return ids
 
+    # returns a new, valid IndieOutreach ID
+    def get_new_io_id(self):
+        ids = self.get_used_io_ids()
+        largest_id = ids[-1] if (len(ids) > 0) else 0
+        return largest_id + 1
 
     # insert -------------------------------------------------------------------
 
@@ -362,6 +377,7 @@ class Streamers():
         streamer_id = twitch_obj['user_id'] if ('user_id' in twitch_obj) else twitch_obj['id']
         streamer_id = int(streamer_id) if (not isinstance(streamer_id, int)) else streamer_id
         if (streamer_id not in self.streamers):
+            twitch_obj['io_id'] = self.get_new_io_id()
             self.streamers[streamer_id] = Streamer(twitch_obj)
         else:
             self.streamers[streamer_id].update(twitch_obj)
@@ -384,7 +400,7 @@ class Streamers():
 
     def export_to_csv(self, filename):
         fieldnames = [
-            'streamer_id', 'login', 'display_name', 'profile_image_url', 'view_counts', 'description',
+            'io_id', 'streamer_id', 'login', 'display_name', 'profile_image_url', 'view_counts', 'description',
             'follower_counts', 'language', 'stream_history'
         ]
         filename = filename if ('.csv' in filename) else filename + '.csv'
@@ -548,6 +564,23 @@ class Streamers():
             if (obj1['followers'] != obj2['followers']):
                 return False
             if (obj1['date'] != obj2['date']):
+                return False
+        return True
+
+
+    # io_ids should represent all ints in [1, 2, ... n], where n = the number of streamers in collection
+    # -> this function makes sure that io_ids match this
+    def validate_io_ids(self):
+
+        io_ids = []
+        for streamer_id, streamer in self.streamers.items():
+            io_ids.append(streamer.io_id)
+
+        io_ids.sort()
+
+        # pattern is:  io_ids[0] = 1, io_ids[1] = 2, ..., io_ids[n] = n + 1
+        for i in range(len(io_ids)):
+            if (io_ids[i] != (i + 1)):
                 return False
         return True
 

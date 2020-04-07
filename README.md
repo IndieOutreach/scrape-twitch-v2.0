@@ -88,6 +88,10 @@ We treat videos as if they are just livestreams we missed
 
 #### Streamer -> streamers.csv
 Streamer profiles
+ - `io_id` - a unique, positive integer ID for the streamer assigned by the Streamers class.
+  - This value indicates when this particular streamer was first scraped relative to all other streamers.
+  - For example, io_id=1 means this streamer is the first streamer ever scraped, io_id=8 means this streamer is the 8th streamer scraped, and so on.
+  - Note: io_ids are permanent once assigned. Therefore, a streamer with io_id=1 will always have io_id=1.
 
 Data from Twitch API:
  - `id` - unique Twitch user ID
@@ -203,11 +207,28 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Change Streamer.id to Streamer.streamer_id (in order to make room for new ID given by IndieOutreach)
+ - Add io_id to Streamer, which is a permanent, unique ID that denotes when IndieOutreach's scraper first scraped the streamer relative to other streamers in the dataset.
 
 #### What is still in development? Known Issues?
+Problem:
  - The streamers.csv file is going to get way too large as the dataset grows. It needs to be broken up
- - Create unique io_ids for each streamer that denote what order they were scraped in. These IDs are unique and permanent, so once a streamer gets an ID it doesn't change.
+
+Solution:
+ - use io_ids to break streamers.csv into smaller streamers_1.csv, streamers_2.csv, ... streamers_n.csv
+  - Each of these smaller streamers_n.csv files will hold 1000 streamers
+
+Implementation:
+ - Loading Streamers
+  - Streamers() needs to be given a folder location as its filepath (/data/streamers/)
+  - Instead of loading a specific file, it should try to open and load streamers_{n}.csv
+  - Keep loading streamers until streamers_{n}.csv does not exist
+  - Create (and maintain) lookup tables { streamer_id -> io_id } and { io_id -> streamer_id}
+ - Exporting Streamers
+  - Use the lookup table to write to streamers_{n}.csv files in batches of 1,000
+ - Adding new Streamers (during scraping)
+  - Make sure to maintain io_id lookup tables on new streamer insertion
+
+
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
 

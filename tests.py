@@ -352,7 +352,8 @@ def test_scrape_streamers(credentials):
     test_names = [
         'twitch0',
         'compile0',
-        'load0'
+        'load0',
+        'io_ids0'
     ]
     tests = get_empty_test(test_names)
 
@@ -388,6 +389,10 @@ def test_scrape_streamers(credentials):
     new_streamers = Streamers(filename)
     if (not streamers.check_if_streamer_collection_same(new_streamers)):
         tests['load0'] = False
+
+    # 0: -> make sure io_ids are valid
+    if (not streamers.validate_io_ids()):
+        tests['io_ids0'] = False
 
     print_test_results(tests)
 
