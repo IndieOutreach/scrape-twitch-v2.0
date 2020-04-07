@@ -29,12 +29,12 @@ class Insights():
     def set_dataset(self, mode):
         if (mode == 'production'):
             self.mode = 'production'
-            self.streamers = Streamers('./data/streamers.csv')
+            self.streamers = Streamers('./data/streamers')
             self.games = Games('./data/games.csv')
             self.streamerslogs = GeneralLogs('./logs/streamer_insights.csv')
         elif (mode == 'testing'):
             self.mode = 'testing'
-            self.streamers = Streamers('./test/streamers.csv')
+            self.streamers = Streamers('./test/streamers')
             self.games = Games('./test/games.csv')
             self.streamerlogs = GeneralLogs('./test/streamer_insights.csv')
 

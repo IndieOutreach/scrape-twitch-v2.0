@@ -276,11 +276,14 @@ class Streamer():
 
 class Streamers():
 
-    def __init__(self, filename = False, missing_streamers_filename = False):
+    def __init__(self, folderpath = False, missing_streamers_filename = False):
         self.streamers = {}
+        self.io_to_streamer_lookup = {}
+        self.streamer_to_io_lookup = {}
+        self.num_streamers_per_file = 1000
         self.known_missing_videos = StreamersMissingVideos(missing_streamers_filename)
-        if (filename):
-            self.load_from_csv(filename)
+        if (folderpath):
+            self.load_from_folder(folderpath)
 
 
     # sets streamers to be empty, effectively wiping the Streamers object
@@ -293,6 +296,7 @@ class Streamers():
     def get(self, streamer_id):
         if (streamer_id in self.streamers):
             return self.streamers[streamer_id]
+        print('missing: ', type(streamer_id), streamer_id)
         return False
 
     # returns a list of all streamer IDs in collection
@@ -370,6 +374,7 @@ class Streamers():
         largest_id = ids[-1] if (len(ids) > 0) else 0
         return largest_id + 1
 
+
     # insert -------------------------------------------------------------------
 
     # inserts a new streamer into the collection
@@ -379,6 +384,8 @@ class Streamers():
         if (streamer_id not in self.streamers):
             twitch_obj['io_id'] = self.get_new_io_id()
             self.streamers[streamer_id] = Streamer(twitch_obj)
+            self.io_to_streamer_lookup[twitch_obj['io_id']] = streamer_id
+            self.streamer_to_io_lookup[streamer_id] = twitch_obj['io_id']
         else:
             self.streamers[streamer_id].update(twitch_obj)
 
@@ -398,7 +405,24 @@ class Streamers():
 
     # File I/O -----------------------------------------------------------------
 
-    def export_to_csv(self, filename):
+    # exports all Streamer objects to .csv files, batched by their io_ids
+    # file1 = (1,1000), file2=(1001, 2000), and so on
+    def export_to_csv(self, folderpath):
+        num_batches = int(len(self.streamers) / self.num_streamers_per_file) + 1
+        for batch_index in range(num_batches):
+            streamers_to_export = []
+            for i in range(self.num_streamers_per_file):
+                io_id = batch_index * self.num_streamers_per_file + i + 1
+                if (io_id in self.io_to_streamer_lookup):
+                    streamer_id = self.io_to_streamer_lookup[io_id]
+                    streamer = self.get(streamer_id)
+                    streamers_to_export.append(streamer.to_exportable_dict())
+            filename = folderpath + '/streamers_' + str(batch_index + 1) + '.csv'
+            self.__export_to_csv(filename, streamers_to_export)
+
+
+    # helper function for self.export_to_csv() that actually writes streamers to that file
+    def __export_to_csv(self, filename, streamers = []):
         fieldnames = [
             'io_id', 'streamer_id', 'login', 'display_name', 'profile_image_url', 'view_counts', 'description',
             'follower_counts', 'language', 'stream_history'
@@ -407,10 +431,25 @@ class Streamers():
         with open(filename, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            for streamer_id, streamer in self.streamers.items():
-                writer.writerow(streamer.to_exportable_dict())
+            for streamer in streamers:
+                writer.writerow(streamer)
 
-    def load_from_csv(self, filename):
+
+    # goes to a folder and starts loading all streamers_{n}.csv files at folderpath
+    def load_from_folder(self, folderpath):
+        self.streamers = {}
+        keep_going = True # <- we want to keep loading from files until we reach a file that DNE
+        i = 1
+        while(keep_going):
+            num_streamers = len(self.streamers)
+            filename = folderpath + '/streamers_' + str(i) + '.csv'
+            keep_going = self.__load_from_csv(filename)
+            i += 1
+
+
+    # opens a file and loads streamers into this object
+    # -> this function is used by self.load_from_folder
+    def __load_from_csv(self, filename):
         filename = filename if ('.csv' in filename) else filename + '.csv'
         try:
             with open(filename) as csvfile:
@@ -418,8 +457,15 @@ class Streamers():
                 for row in reader:
                     streamer = Streamer(row, True)
                     self.streamers[streamer.streamer_id] = streamer
+                    self.io_to_streamer_lookup[streamer.io_id] = streamer.streamer_id
+                    self.streamer_to_io_lookup[streamer.streamer_id] = streamer.io_id
+
         except IOError:
-            print(filename, "does not exist yet")
+            #print(filename, "does not exist yet")
+            return False
+
+        return True
+
 
     # Data Validation ----------------------------------------------------------
 

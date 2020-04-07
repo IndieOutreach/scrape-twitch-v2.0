@@ -207,27 +207,11 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add io_id to Streamer, which is a permanent, unique ID that denotes when IndieOutreach's scraper first scraped the streamer relative to other streamers in the dataset.
+ - Streamers now loads from / exports to a folder of 'streamers_{n}.csv' files. Each file has 1,000 streamers in it.
+ - This is to make sure no grouping of streamers gets too large filesize-wise
 
 #### What is still in development? Known Issues?
-Problem:
- - The streamers.csv file is going to get way too large as the dataset grows. It needs to be broken up
-
-Solution:
- - use io_ids to break streamers.csv into smaller streamers_1.csv, streamers_2.csv, ... streamers_n.csv
-  - Each of these smaller streamers_n.csv files will hold 1000 streamers
-
-Implementation:
- - Loading Streamers
-  - Streamers() needs to be given a folder location as its filepath (/data/streamers/)
-  - Instead of loading a specific file, it should try to open and load streamers_{n}.csv
-  - Keep loading streamers until streamers_{n}.csv does not exist
-  - Create (and maintain) lookup tables { streamer_id -> io_id } and { io_id -> streamer_id}
- - Exporting Streamers
-  - Use the lookup table to write to streamers_{n}.csv files in batches of 1,000
- - Adding new Streamers (during scraping)
-  - Make sure to maintain io_id lookup tables on new streamer insertion
-
+- Add a "wipe" function so tests.py can clear the /test/ folder before running  
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
@@ -241,3 +225,5 @@ Implementation:
  - Build controller for scraping in production - maybe a server that dispatches requests to threads?
  - Add timeout handling to API requests
  - Add a caching system for API requests so we can spoof API requests
+ - Spin off schema from README.md to schema.md
+ - Fix lists in README.md so sub-bullet points appear properly on Github

@@ -333,7 +333,7 @@ class Scraper():
             self.mode = 'production'
             self.filepaths = {
                 'games': './data/games.csv',
-                'streamers': './data/streamers.csv',
+                'streamers': './data/streamers',
                 'streamers_missing_videos': './data/streamers_missing_videos.csv',
                 'logs': './logs/runtime.csv',
                 'filterlogs': './logs/filters.csv'
@@ -345,7 +345,7 @@ class Scraper():
             self.mode = 'testing'
             self.filepaths = {
                 'games': './test/games.csv',
-                'streamers': './test/streamers.csv',
+                'streamers': './test/streamers',
                 'streamers_missing_videos': './test/streamers_missing_videos.csv',
                 'logs': './test/runtime.csv',
                 'filterlogs': './test/filterlogs.csv'
