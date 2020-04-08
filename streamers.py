@@ -184,7 +184,66 @@ class Streamer():
             self.__set_timestamps_for_fields(['stream_history'])
 
 
+    # sets the io_id for this streamer
+    # This value is usually permanent, but may need to be updated in the case of merging two streamer collections
+    def set_io_id(self, io_id):
+        if (io_id != self.io_id):
+            self.io_id = io_id
+            self.__set_timestamps_for_fields(['io_id'])
 
+
+    # Merge --------------------------------------------------------------------
+    # - Functions for merging two Streamer objects
+
+    # takes new info from streamer2 and adds it to this streamer object
+    # Following this policy
+    # - No changes:                     [io_id, streamer_id]
+    # - Pick the most current:          [display_name, profile_image_url, login, description, language]
+    # - Pick the longest:               [follower_counts, view_counts]
+    # - Pick the longest for each item: [stream_history]
+    def merge(self, s2):
+
+        # used for picking the most recent version of objects when merging
+        def __choose_most_recent(obj1, obj2, date1, date2):
+            if (date1 >= date2):
+                return obj1
+            return obj2
+
+        # returns the object that has a longer length
+        def __choose_longest(list1, list2):
+            if (len(list1) >= len(list2)):
+                return list1
+            return list2
+
+        # merge based off recency
+        t1 = self.timestamps
+        t2 = s2.timestamps
+        self.display_name      = __choose_most_recent(self.display_name, s2.display_name, t1['display_name'], t2['display_name'])
+        self.profile_image_url = __choose_most_recent(self.profile_image_url, s2.profile_image_url, t1['profile_image_url'], t2['profile_image_url'])
+        self.login             = __choose_most_recent(self.login, s2.login, t1['login'], t2['login'])
+        self.description       = __choose_most_recent(self.description, s2.description, t1['description'], t2['description'])
+        self.language          = __choose_most_recent(self.language, s2.language, t1['language'], t2['language'])
+
+        # merge based off length
+        self.view_counts     = __choose_longest(self.view_counts, s2.view_counts)
+        self.follower_counts = __choose_longest(self.follower_counts, s2.follower_counts)
+
+        # merge stream history
+        self.__merge_stream_history(s2.stream_history)
+
+
+    # merges stream history object according to:
+    # - if game_id in sh2 DNE in this stream history, add it
+    # - otherwise, choose the game_id with more `date` items
+    def __merge_stream_history(self, sh2):
+        for game_id, stream_obj in sh2.items():
+            if (game_id in self.stream_history):
+                len1 = len(self.stream_history[game_id]['dates'])
+                len2 = len(stream_obj['dates'])
+                if (len2 > len1):
+                    self.stream_history[game_id] = stream_obj
+            else:
+                self.stream_history[game_id] = stream_obj
 
     # Get ----------------------------------------------------------------------
 
@@ -395,6 +454,8 @@ class Streamers():
     # insert -------------------------------------------------------------------
 
     # inserts a new streamer into the collection
+    # -> this function does not handle the case where we are adding a full Streamer object
+    #    if you need to add a full Streamer object, use .add_streamer_obj() instead!
     def add_or_update_streamer(self, twitch_obj):
         streamer_id = twitch_obj['user_id'] if ('user_id' in twitch_obj) else twitch_obj['id']
         streamer_id = int(streamer_id) if (not isinstance(streamer_id, int)) else streamer_id
@@ -419,6 +480,33 @@ class Streamers():
     # adds a streamer to self.known_missing_videos
     def add_streamer_to_missing_videos_collection(self, streamer_id):
         self.known_missing_videos.add(streamer_id)
+
+
+    # when calling .merge(), a full Streamer object may need to be added to our collection
+    # this streamer doesn't exist yet in our collection, so we will need to re-assign io_ids
+    def add_streamer_obj(self, streamer_obj):
+        if (streamer_obj.streamer_id in self.streamers):
+            return
+
+        streamer_id = streamer_obj.streamer_id
+        new_io_id = self.get_new_io_id()
+        streamer_obj.set_io_id(new_io_id)
+        self.streamers[streamer_id] = streamer_obj
+        self.io_to_streamer_lookup[new_io_id] = streamer_id
+        self.streamer_to_io_lookup[streamer_id] = new_io_id
+        return
+
+
+    # Merge --------------------------------------------------------------------
+    # - Functions for merging two different Streamers collections
+
+    # merges this Streamers object with another Streamers collection
+    def merge(self, streamers2):
+        for id, streamer in streamers2.streamers.items():
+            if (id in self.streamers):
+                self.streamers[id].merge(streamer)
+            else:
+                self.add_streamer_obj(streamers2)
 
     # File I/O -----------------------------------------------------------------
 

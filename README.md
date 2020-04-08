@@ -207,35 +207,11 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add Streamer.timestamp field to keep track of the last time each parameter in Streamer was updated.
- - This will be useful when merging Streamers() collections
+ - Add Streamers.merge() function
 
 #### What is still in development? Known Issues?
-Problem
- - Scraping will require multiple threads running on Streamers objects at any given time, so desyncing data will happen.
-    - For example, one thread could be running .compile_streamers_db() and add new livestream data to existing streamers. Another thread could be running .add_videos_to_streamers_db() and be adding video data to existing streamers. Assuming that both operations start at the same time, they will both return to the main thread with newly updated and different versions of Streamers.
-
-Solution
- - We need a way to merge two sets of Streamers so newly scraped info is never lost
-
-Implementation
- - Streamers.merge(updatedStreamers) function
- - Merge Changes Policy
-    - Insert any new streamers
-    - `io_id` -> leave unchanged
-    - `streamer_id` -> leave unchanged
-    - `login` -> select the newer version
-    - `display_name` -> select the newer version
-    - `profile_image_url` -> select the newer version
-    - `description` -> select the newer version
-    - `language` -> select the newer version
-    - `view_counts` -> select the longer array
-    - `follower_counts` -> select the longer array
-    - `stream_history` -> for every game_id, select the one with a longer `date` value
- - In order to determine which version is newer:
-    - Add a lookup table of last edits: Streamer.timestamps = { 'display_name': INT_DATE, 'profile_image_url': INT_DATE, ... }
-    - Log the time any change was made
-    - Make sure to initialize these values on Streamer init
+ - Streamer.merge() doesn't update Streamer.timestamps right now.
+ - Merged in data should also merge in their respective timestamps
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs

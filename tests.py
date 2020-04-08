@@ -601,6 +601,50 @@ def test_add_videos(credentials):
 
     print_test_results(tests)
 
+# ==============================================================================
+# Test Merge Streamers
+# ==============================================================================
+
+
+def test_merge_streamers(credentials):
+    print_test_title("Merge Videos")
+    test_names = [
+        'load0',
+        'merge0', 'merge1'
+    ]
+    tests = get_empty_test(test_names)
+    folderpath = './test/streamers'
+
+    # scrape some streamers to make sure there's data to load from
+    scraper = Scraper(credentials, 'testing')
+    scraper.set_print_mode(False)
+    streamers1 = scraper.compile_streamers_db(20)
+    streamers1.export_to_csv(folderpath)
+
+    # load0: -> make sure loading Streamers from files does not change info
+    streamers2 = Streamers(folderpath)
+    if (not streamers1.check_if_streamer_collection_same(streamers2)):
+        tests['load0'] = False
+
+    # merge0: -> tests to make sure merging two identical Streamers collections doesn't duplicate any data
+    streamers1.merge(streamers2)
+    if (not streamers1.check_if_streamer_collection_same(streamers2)):
+        tests['merge0'] = False
+
+    # merge1: -> adding followers should result in Streamers objects with longer follower counts
+    streamers2 = scraper.add_followers_to_streamers_db()
+    streamers1.merge(streamers2)
+    for id, streamer in streamers1.streamers.items():
+        print(streamer.follower_counts)
+        if (len(streamer.follower_counts) == 0):
+            tests['merge1'] = False
+            print('fail')
+        else:
+            print('success')
+
+    # merge2: -> adding videos should result in larger stream_histories
+    print_test_results(tests)
+
 
 # ==============================================================================
 # Main Functions
@@ -651,7 +695,7 @@ def main():
 
     # declare what tests to run - reference if statements below for test codes to add
     # -> if this list is empty, run all tests
-    testing = []
+    testing = ["Merge Streamers"]
 
     # tests!
     if ((len(testing) == 0) or ("Twitch API" in testing)):
@@ -668,6 +712,8 @@ def main():
         test_add_followers(credentials)
     if ((len(testing) == 0) or ("Add Videos" in testing)):
         test_add_videos(credentials)
+    if ((len(testing) == 0) or ("Merge Streamers" in testing)):
+        test_merge_streamers(credentials)
 
 
 # Run --------------------------------------------------------------------------
