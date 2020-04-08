@@ -104,8 +104,8 @@ Data from Twitch API:
 
 Data aggregated from streams:
  - `stream_history` - a JSON object of format `{twitch_game_id: {views: 123, num_videos: 1, dates: [DATE_OBJ...]}, ....}`
-  - where DATE_OBJ = `{scraped: INT_DATE, streamed: INT_DATE}`
-  - Note: views does not include the views on videos, so you'd have to to account for this when calculating average views
+    - where DATE_OBJ = `{scraped: INT_DATE, streamed: INT_DATE}`
+    - Note: views does not include the views on videos, so you'd have to to account for this when calculating average views
  - `language` - this value is just whatever the last processed stream's language was
 
 
@@ -157,58 +157,57 @@ Keeps track of actions and requests made by scraper.py
  - `time_started` - the unix epoch date (in milliseconds) that the procedure started on. This serves as a unique ID  
  - `time_ended` - the unix epoch date (in milleseconds) that the procedure ended on
  - `content_type` - The type of content that was scraped during procedure
-  - Value is a string from list ['streamers', 'games', 'followers', 'videos']
+    - Value is a string from list ['streamers', 'games', 'followers', 'videos']
  - `num_items` - number of items of content_type that the program ended with
-  - you can use this value over time to see how the dataset grows
+    - you can use this value over time to see how the dataset grows
  - `logs` - an object with the stats about the procedure's runtime
-  - of form: `{ action_type: {'n': NUM_REQUESTS, 'total': TOTAL_TIME_TAKEN, 'mean': MEAN_TIME_PER_REQUEST, 'std_dev': STD_DEV_OF_TIME_PER_REQUEST, 'min': MIN_TIME_FOR_A_REQUEST, 'max': MAX_TIME_FOR_A_REQUEST, 'first_start': UNIX_EPOCH_TIMESTAMP_OF_WHEN_FIRST_REQUEST_STARTED, 'last_end': UNIX_EPOCH_TIMESTAMP_OF_WHEN_LAST_REQUEST_ENDED}, ... }`
+    - of form: `{ action_type: {'n': NUM_REQUESTS, 'total': TOTAL_TIME_TAKEN, 'mean': MEAN_TIME_PER_REQUEST, 'std_dev': STD_DEV_OF_TIME_PER_REQUEST, 'min': MIN_TIME_FOR_A_REQUEST, 'max': MAX_TIME_FOR_A_REQUEST, 'first_start': UNIX_EPOCH_TIMESTAMP_OF_WHEN_FIRST_REQUEST_STARTED, 'last_end': UNIX_EPOCH_TIMESTAMP_OF_WHEN_LAST_REQUEST_ENDED}, ... }`
 
 
 #### Livestream Filters -> filters.csv
  - `time` - the unix epoch date (in seconds) that the filter was recorded
  - `scraped` - the total number of livestreams that were originally scraped (pre-filter)
  - `filtered` - the total number of livestreams that were removed due to the filter
-  - Note: If you calculate `scraped - filtered`, you can calculate the number of livestreams that made it through the filter
+    - Note: If you calculate `scraped - filtered`, you can calculate the number of livestreams that made it through the filter
  - `view_cutoff` - "Filter out all livestreams with fewer than X views"
  - `breakdown` - a dict that shows {# views -> # livestreams in batch}
-  - Note: the largest key in this dict works as a ">= key" function. IE: if 5 is the largest key, then breakdown[5] = number of livestreams that had 5 or more viewers
+    - Note: the largest key in this dict works as a ">= key" function. IE: if 5 is the largest key, then breakdown[5] = number of livestreams that had 5 or more viewers
 
 #### Snapshot Stats of Streamers DB -> streamer_insights.csv
  - `time` - the unix epoch date (in seconds) the insight was recorded
  - `have_video_data` - breakdown of how many streamers in the dataset have video data
-  - form: {'percentage': double, 'number': int}
+    - form: {'percentage': double, 'number': int}
  - `followers_past_day` - breakdown of how many streamers in the dataset have follower data from the past day
-  - form: {'percentage': double, 'number': int}
+    - form: {'percentage': double, 'number': int}
  - `num_follower_counts` - a dictionary that shows a breakdown of how many streamers in the dataset have a certain number of follower_count objects
-  - form: { num_follower_count_objects -> number_of_streamers_in_dataset }
+    - form: { num_follower_count_objects -> number_of_streamers_in_dataset }
  - `num_view_counts` - a dictionary that shows the breakdown of how many streamers in the dataset have a certain number of view_count objects
-  - form: { num_view_count_objects -> number_of_streamers_in_dataset }
+    - form: { num_view_count_objects -> number_of_streamers_in_dataset }
  - `livestreamed_past_day` - shows what portion of streamers in the dataset have livestreamed in the past day
-  - form: { 'percentage': double, 'number': int }
+    - form: { 'percentage': double, 'number': int }
  - `livestreamed_past_week` - shows what portion of streamers in the dataset have livestreamed in the past week
-  - form: { 'percentage': double, 'number': int }
+    - form: { 'percentage': double, 'number': int }
  - `has_view_data_past_day` - shows what portion of streamers in the dataset have view_count objects from the past day
-  - form: { 'percentage': double, 'number': int }
+    - form: { 'percentage': double, 'number': int }
  - `languages` - a dictionary showing how many streamers in the dataset use different languages
-  - form: { language (str) -> number of streamers (int) }
+    - form: { language (str) -> number of streamers (int) }
  - `livestreams_per_streamer` - average number of livestreams per streamer
-  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+    - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
  - `games_per_streamer_from_livestreams` - average number of games played by a streamer (in their livestreams history)
-  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+    - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
  - `videos_per_streamer` - average number of videos per streamer with video data
-  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+    - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
  - `games_per_streamer_from_videos` - average number of games played by a streamer (in their videos history)
-  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+    - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
  - `views_per_stream` - average number of views per livestream of all streamers in the dataset
-  - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
+    - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
  - `totals` - shows the total number of different items of interest in the dataset
-  - form: { 'num_streamers': int, 'num_livestreams': int, 'num_videos': int, 'games_from_livestreams': int, 'games_from_videos': int}
+    - form: { 'num_streamers': int, 'num_livestreams': int, 'num_videos': int, 'games_from_livestreams': int, 'games_from_videos': int}
 
 ## Development Notes
 
 #### What is new in this commit?
- - Streamers now loads from / exports to a folder of 'streamers_{n}.csv' files. Each file has 1,000 streamers in it.
- - This is to make sure no grouping of streamers gets too large filesize-wise
+ - Increase indentation tabs on sub-bullet points in README.md, hopefully so that Github's MD renderer will mark them as sub-bullets  
 
 #### What is still in development? Known Issues?
 - Add a "wipe" function so tests.py can clear the /test/ folder before running  
@@ -226,4 +225,3 @@ Keeps track of actions and requests made by scraper.py
  - Add timeout handling to API requests
  - Add a caching system for API requests so we can spoof API requests
  - Spin off schema from README.md to schema.md
- - Fix lists in README.md so sub-bullet points appear properly on Github
