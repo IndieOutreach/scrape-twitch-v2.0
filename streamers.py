@@ -87,6 +87,19 @@ class Streamer():
             self.stream_history    = {} # will have format {twitch_game_id: num_times_played}
 
 
+        # initialize timestamps for when values were last changed
+        self.timestamps = {}
+        fields = ['io_id', 'streamer_id', 'login', 'display_name', 'profile_image_url', 'view_counts', 'description', 'follower_counts', 'language', 'stream_history']
+        self.__set_timestamps_for_fields(fields)
+        return
+
+    # updates the "last updated" timestamp for every key in names
+    def __set_timestamps_for_fields(self, names = []):
+        current_time = int(time.time())
+        for key in names:
+            self.timestamps[key] = current_time
+
+
     # stream history, when JSONified, converts all game_ids into strings, even the ints
     # -> we need to re-intify those game_ids
     def __load_stream_history(self, obj):
@@ -112,7 +125,7 @@ class Streamer():
         self.profile_image_url = streamer_obj['profile_image_url']
         self.description       = streamer_obj['description']
         self.language          = streamer_obj['language'] if ('language' in streamer_obj) else self.language
-
+        self.__set_timestamps_for_fields(['display_name', 'login', 'profile_image_url', 'description', 'language'])
 
         # if the most recent view_count is in the last 24 hours, we can just modify that instead of adding a new entry
         current_time = int(time.time())
@@ -122,12 +135,12 @@ class Streamer():
             self.view_counts[-1]['date'] = current_time
         else:
             self.view_counts.append({'views': streamer_obj['view_count'], 'date': current_time })
-
+        self.__set_timestamps_for_fields(['view_counts'])
 
     # adds a new entry to follower_count
     def add_follower_data(self, followers):
         self.follower_counts.append({'followers': followers, 'date': int(time.time())})
-
+        self.__set_timestamps_for_fields(['follower_counts'])
 
     # adds data from a video or livestream
     def add_stream_data(self, stream):
@@ -151,6 +164,7 @@ class Streamer():
                 self.stream_history[game_key]['dates'].append(get_date_obj(stream.date))
                 self.stream_history[game_key]['recent'] = views_contributed
                 self.stream_history[game_key]['views'] += views_contributed
+                self.__set_timestamps_for_fields(['stream_history'])
             else:
                 # if we have already recorded the current stream with this game,
                 # -> we only want to update the views contributed if its greater than last time
@@ -158,7 +172,7 @@ class Streamer():
                     self.stream_history[game_key]['views'] -= self.stream_history[game_key]['recent']
                     self.stream_history[game_key]['views'] += views_contributed
                     self.stream_history[game_key]['recent'] = views_contributed
-
+                    self.__set_timestamps_for_fields(['stream_history'])
 
         else:
             self.stream_history[game_key] = {
@@ -167,6 +181,9 @@ class Streamer():
                 'videos': videos_contributed,
                 'dates': [get_date_obj(stream.date)]
             }
+            self.__set_timestamps_for_fields(['stream_history'])
+
+
 
 
     # Get ----------------------------------------------------------------------
