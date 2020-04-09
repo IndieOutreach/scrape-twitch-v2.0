@@ -207,9 +207,11 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Streamer.merge() now updates timestamps
+ - Create scraper_controller.py - a multithreaded script that will continuously call the different Scraper functions and compile streamers_{n}.csv files. Once you start this script, it will keep running on a schedule forever.
+ - Note: For now, scraper_controller.py can spin up 3 worker threads that print out their IDs
 
 #### What is still in development? Known Issues?
+- Build controller for scraping in production - maybe a server that dispatches requests to threads?
 
 
 #### What's next?
@@ -222,7 +224,6 @@ Keeps track of actions and requests made by scraper.py
  - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
  - convert tests.py to use argparse for consistency
  - Add `reset_logs` function to Scraper so you can re-use the same Scraper instance between different scraping procedures and not double-up on log data
- - Build controller for scraping in production - maybe a server that dispatches requests to threads?
  - Add timeout handling to API requests
  - Add a caching system for API requests so we can spoof API requests
  - Spin off schema from README.md to schema.md
