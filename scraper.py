@@ -609,9 +609,6 @@ class Scraper():
 
         # iterate over each streamer object and add a followers count to their profile
         for i in range(num_streamers_to_process):
-            if ((self.mode == 'testing') and (i > 10)):
-                return streamers
-
             streamer_id = streamer_ids[i]
             self.__print(str(i) + ': ' + str(streamer_ids[i]))
             num_followers = self.twitchAPI.get_followers(streamer_id)

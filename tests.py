@@ -610,7 +610,7 @@ def test_merge_streamers(credentials):
     print_test_title("Merge Videos")
     test_names = [
         'load0',
-        'merge0', 'merge1'
+        'merge0', 'merge1', 'merge2'
     ]
     tests = get_empty_test(test_names)
     folderpath = './test/streamers'
@@ -635,14 +635,19 @@ def test_merge_streamers(credentials):
     streamers2 = scraper.add_followers_to_streamers_db()
     streamers1.merge(streamers2)
     for id, streamer in streamers1.streamers.items():
-        print(streamer.follower_counts)
         if (len(streamer.follower_counts) == 0):
             tests['merge1'] = False
-            print('fail')
-        else:
-            print('success')
 
     # merge2: -> adding videos should result in larger stream_histories
+    streamers2 = scraper.add_videos_to_streamers_db(10, 3)
+    streamers1.merge(streamers2)
+    for id, streamer2 in streamers2.streamers.items():
+        streamer1 = streamers1.get(id)
+        if (len(streamer2.stream_history) < len(streamer1.stream_history)):
+            games_livestreamed, games_in_videos = streamer2.get_games_played()
+            if (len(games_in_videos) > 0):
+                tests['merge2'] = False
+
     print_test_results(tests)
 
 
@@ -695,7 +700,7 @@ def main():
 
     # declare what tests to run - reference if statements below for test codes to add
     # -> if this list is empty, run all tests
-    testing = ["Merge Streamers"]
+    testing = []
 
     # tests!
     if ((len(testing) == 0) or ("Twitch API" in testing)):

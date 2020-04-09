@@ -207,11 +207,10 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add Streamers.merge() function
+ - Streamer.merge() now updates timestamps
 
 #### What is still in development? Known Issues?
- - Streamer.merge() doesn't update Streamer.timestamps right now.
- - Merged in data should also merge in their respective timestamps
+
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs

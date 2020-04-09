@@ -204,29 +204,33 @@ class Streamer():
     def merge(self, s2):
 
         # used for picking the most recent version of objects when merging
-        def __choose_most_recent(obj1, obj2, date1, date2):
-            if (date1 >= date2):
+        def __choose_most_recent(obj1, obj2, key, timestamps1, timestamps2):
+            if (timestamps1[key] >= timestamps2[key]):
+                self.timestamps[key] = timestamps1[key]
                 return obj1
+            self.timestamps[key] = timestamps2[key]
             return obj2
 
         # returns the object that has a longer length
-        def __choose_longest(list1, list2):
-            if (len(list1) >= len(list2)):
+        def __choose_longest(list1, list2, key, timestamps1, timestamps2):
+            if (len(list1) > len(list2)):
+                self.timestamps[key] = timestamps1[key]
                 return list1
+            self.timestamps[key] = timestamps2[key]
             return list2
 
         # merge based off recency
         t1 = self.timestamps
         t2 = s2.timestamps
-        self.display_name      = __choose_most_recent(self.display_name, s2.display_name, t1['display_name'], t2['display_name'])
-        self.profile_image_url = __choose_most_recent(self.profile_image_url, s2.profile_image_url, t1['profile_image_url'], t2['profile_image_url'])
-        self.login             = __choose_most_recent(self.login, s2.login, t1['login'], t2['login'])
-        self.description       = __choose_most_recent(self.description, s2.description, t1['description'], t2['description'])
-        self.language          = __choose_most_recent(self.language, s2.language, t1['language'], t2['language'])
+        self.display_name      = __choose_most_recent(self.display_name, s2.display_name, 'display_name', t1, t2)
+        self.profile_image_url = __choose_most_recent(self.profile_image_url, s2.profile_image_url, 'profile_image_url', t1, t2)
+        self.login             = __choose_most_recent(self.login, s2.login, 'login', t1, t2)
+        self.description       = __choose_most_recent(self.description, s2.description, 'description', t1, t2)
+        self.language          = __choose_most_recent(self.language, s2.language, 'language', t1, t2)
 
         # merge based off length
-        self.view_counts     = __choose_longest(self.view_counts, s2.view_counts)
-        self.follower_counts = __choose_longest(self.follower_counts, s2.follower_counts)
+        self.view_counts     = __choose_longest(self.view_counts, s2.view_counts, 'view_counts', t1, t2)
+        self.follower_counts = __choose_longest(self.follower_counts, s2.follower_counts, 'follower_counts', t1, t2)
 
         # merge stream history
         self.__merge_stream_history(s2.stream_history)
