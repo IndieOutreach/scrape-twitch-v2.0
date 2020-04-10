@@ -368,7 +368,7 @@ def test_scrape_streamers(credentials):
     #        tests['twitch0'] = False
 
     # compile test 0: -> make sure scraped streamers have games data
-    streamers = scraper.compile_streamers_db(5)
+    streamers = scraper.compile_streamers_db(False, 5)
     streamer_ids = streamers.get_ids()
     if (len(streamer_ids) == 0):
         tests['compile0'] = False
@@ -523,7 +523,7 @@ def test_add_followers(credentials):
 
     # followers0: -> make sure that a streamer's follower_counts increases
     # Because .add_followers_to_streamers_db() *needs* a filepath, we will create a .csv file for it to load
-    streamers1 = scraper.compile_streamers_db(5)
+    streamers1 = scraper.compile_streamers_db(False, 5)
     num_missing1 = len(streamers1.get_ids_with_missing_follower_data())
     streamers1.export_to_csv(folderpath)
     streamers2 = scraper.add_followers_to_streamers_db()
@@ -579,9 +579,9 @@ def test_add_videos(credentials):
     folderpath = './test/streamers'
 
     # videos0: -> scrape videos and check streamer objects
-    streamers1 = scraper.compile_streamers_db(5)
+    streamers1 = scraper.compile_streamers_db(False, 5)
     streamers1.export_to_csv(folderpath)
-    streamers2 = scraper.add_videos_to_streamers_db(15)
+    streamers2 = scraper.add_videos_to_streamers_db(False, 15)
     num_streamers_without_videos = 0
     for streamer_id in streamers1.get_ids():
         streamer1 = streamers1.get(streamer_id)
@@ -619,7 +619,7 @@ def test_merge_streamers(credentials):
     # scrape some streamers to make sure there's data to load from
     scraper = Scraper(credentials, 'testing')
     scraper.set_print_mode(False)
-    streamers1 = scraper.compile_streamers_db(20)
+    streamers1 = scraper.compile_streamers_db(False, 20)
     streamers1.export_to_csv(folderpath)
 
     # load0: -> make sure loading Streamers from files does not change info
@@ -640,7 +640,7 @@ def test_merge_streamers(credentials):
             tests['merge1'] = False
 
     # merge2: -> adding videos should result in larger stream_histories
-    streamers2 = scraper.add_videos_to_streamers_db(10, 3)
+    streamers2 = scraper.add_videos_to_streamers_db(False, 10, 3)
     streamers1.merge(streamers2)
     for id, streamer2 in streamers2.streamers.items():
         streamer1 = streamers1.get(id)

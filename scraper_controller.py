@@ -14,6 +14,7 @@
 
 import sys
 import time
+import json
 import threading
 
 from scraper import *
@@ -37,7 +38,9 @@ worker_threads = {} # form: { thread_id: Thread object }
 # Scrape Livestreams -----------------------------------------------------------
 
 def thread_scrape_livestreams(thread_id):
-    print('this function is for scraping livestreams')
+    credentials = open('credentials.json')
+    scraper = Scraper(json.load(credentials))
+
     while(1):
         if (work[thread_id]['status'] == 'waiting'):
             work[thread_id]['status'] = 'working'
@@ -49,7 +52,9 @@ def thread_scrape_livestreams(thread_id):
 # Scrape Videos ----------------------------------------------------------------
 
 def thread_scrape_videos(thread_id):
-    print('this function is for scraping videos')
+    credentials = open('credentials.json')
+    scraper = Scraper(json.load(credentials))
+
     while(1):
         print('thread: ', thread_id)
         time.sleep(5) # never sleep
@@ -57,7 +62,9 @@ def thread_scrape_videos(thread_id):
 # Scrape Followers -------------------------------------------------------------
 
 def thread_scrape_followers(thread_id):
-    print('this function is for scraping followers')
+    credentials = open('credentials.json')
+    scraper = Scraper(json.load(credentials))
+    
     while(1):
         print('thread: ', thread_id)
         time.sleep(2) # sleep for

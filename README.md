@@ -207,7 +207,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add Streamers.clone() and Streamer.clone() functions for duplicating Streamers collections
+ - Modify Scraper so it can take in a Streamers object in function parameters instead of always loading a new Streamers from a folderpath at runtime.
 
 #### What is still in development? Known Issues?
 - Build controller for scraping in production - maybe a server that dispatches requests to threads?
