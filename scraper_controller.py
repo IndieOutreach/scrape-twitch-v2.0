@@ -39,8 +39,12 @@ worker_threads = {} # form: { thread_id: Thread object }
 def thread_scrape_livestreams(thread_id):
     print('this function is for scraping livestreams')
     while(1):
-        print('thread: ', thread_id)
-        time.sleep(1) # * 60 * 15) # sleep for 15 minutes
+        if (work[thread_id]['status'] == 'waiting'):
+            work[thread_id]['status'] = 'working'
+            print('thread: ', thread_id)
+
+            work[thread_id]['status'] = 'done'
+            time.sleep(1) # * 60 * 15) # sleep for 15 minutes
 
 # Scrape Videos ----------------------------------------------------------------
 
@@ -73,11 +77,18 @@ def main_thread():
     worker_threads['videos']      = threading.Thread(target=thread_scrape_videos, args=('videos', ))
     worker_threads['followers']   = threading.Thread(target=thread_scrape_followers, args=('followers', ))
     for thread_id in worker_threads:
-        work[thread_id] = {'streamers': streamers, 'status': 'waiting'} # <- TODO: change to streamers.clone()
+        work[thread_id] = {'streamers': streamers.clone(), 'status': 'waiting'} # <- TODO: change to streamers.clone()
         worker_threads[thread_id].start()
 
     # wait until there is work to be done
     while(1):
+
+        for thread_id in work:
+            if (work[thread_id]['status'] == 'done'):
+                streamers.merge(work[thread_id]['streamers'])
+                work[thread_id]['streamers'] = streamers.clone()
+                work[thread_id]['status'] = 'working'
+                streamers.export_to_csv()
         time.sleep(1)
 
 
@@ -85,4 +96,6 @@ def main_thread():
 # Run --------------------------------------------------------------------------
 
 if (__name__ == '__main__'):
+    print('This program is not functional on this commit.')
+    return
     main_thread()

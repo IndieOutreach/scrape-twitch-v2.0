@@ -118,6 +118,16 @@ class Streamer():
         except ValueError:
             return False
 
+    # Creates and returns a new Streamer object that is identical to this one
+    def clone(self):
+        new_streamer = Streamer(self.to_exportable_dict(), True)
+        new_streamer.timestamps = self.timestamps
+        return new_streamer
+
+
+    # Insert -------------------------------------------------------------------
+
+
     # updates profile information w/ new info from Twitch
     def update(self, streamer_obj):
         self.display_name      = streamer_obj['display_name']
@@ -369,6 +379,20 @@ class Streamers():
     # sets streamers to be empty, effectively wiping the Streamers object
     def reset(self):
         self.streamers = {}
+
+
+    # returns a new Streamers() object that is exactly the same as this one
+    def clone(self):
+        cloned = Streamers()
+        cloned.streamers = {}
+        for streamer_id, streamer in self.streamers.items():
+            cloned.streamers[streamer_id] = streamer.clone()
+        cloned.io_to_streamer_lookup = self.io_to_streamer_lookup
+        cloned.streamer_to_io_lookup = self.streamer_to_io_lookup
+        cloned.num_streamers_per_file = self.num_streamers_per_file
+        cloned.known_missing_videos = self.known_missing_videos
+        return cloned
+
 
     # get ----------------------------------------------------------------------
 

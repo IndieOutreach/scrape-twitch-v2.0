@@ -607,10 +607,11 @@ def test_add_videos(credentials):
 
 
 def test_merge_streamers(credentials):
-    print_test_title("Merge Videos")
+    print_test_title("Merge Streamers")
     test_names = [
         'load0',
-        'merge0', 'merge1', 'merge2'
+        'merge0', 'merge1', 'merge2',
+        'clone0', 'clone1', 'clone2'
     ]
     tests = get_empty_test(test_names)
     folderpath = './test/streamers'
@@ -647,6 +648,26 @@ def test_merge_streamers(credentials):
             games_livestreamed, games_in_videos = streamer2.get_games_played()
             if (len(games_in_videos) > 0):
                 tests['merge2'] = False
+
+    # clone0: -> test to see if cloning works
+    streamers2 = streamers1.clone()
+    if (not streamers2.check_if_streamer_collection_same(streamers1)):
+        tests['clone0'] = False
+
+    # clone1: -> test to make sure that modifying a clone DOES NOT modify the original
+    for id, updated_streamer in streamers2.streamers.items():
+        updated_streamer.add_follower_data(1)
+        original_streamer = streamers1.get(id)
+        if (len(original_streamer.follower_counts) >= len(updated_streamer.follower_counts)):
+            tests['clone1'] = False
+    if (streamers1.check_if_streamer_collection_same(streamers2)):
+        tests['clone1'] = False
+
+    # clone2: -> remove the newly added data from clone, it should be identical to streamers1 again
+    for id, streamer in streamers2.streamers.items():
+        streamer.follower_counts = streamer.follower_counts[0:-1]
+    if (not streamers1.check_if_streamer_collection_same(streamers2)):
+        tests['clone2'] = False
 
     print_test_results(tests)
 

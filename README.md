@@ -207,12 +207,12 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Create scraper_controller.py - a multithreaded script that will continuously call the different Scraper functions and compile streamers_{n}.csv files. Once you start this script, it will keep running on a schedule forever.
- - Note: For now, scraper_controller.py can spin up 3 worker threads that print out their IDs
+ - Add Streamers.clone() and Streamer.clone() functions for duplicating Streamers collections
 
 #### What is still in development? Known Issues?
 - Build controller for scraping in production - maybe a server that dispatches requests to threads?
-
+- Logs are not thread safe
+- scraper_controller.py currently (intentionally) does not run
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
