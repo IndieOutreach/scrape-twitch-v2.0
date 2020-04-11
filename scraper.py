@@ -353,9 +353,21 @@ class Scraper():
             self.insights = Insights('testing')
             self.insights.set_logging(True)
 
+        elif (mode == 'headless'):
+            self.mode = 'headless'
+            self.filepaths = {
+                'games': './data/games.csv',
+                'streamers': './data/streamers',
+                'streamers_missing_videos': './data/streamers_missing_videos.csv',
+                'logs': './logs/runtime.csv',
+                'filterlogs': './logs/filters.csv'
+            }
+            self.print_mode_on = False
+
         # save any log changes and load the new logs object
         self.filterLogs.export_to_csv()
         self.filterLogs = FilterLogs(self.filepaths['filterlogs'])
+
 
     # prints if the mode is right
     def __print(self, message):

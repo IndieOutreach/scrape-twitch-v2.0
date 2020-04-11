@@ -397,6 +397,17 @@ class Insights():
         return stats
 
 
+    # Specific Streamer --------------------------------------------------------
+
+    # prints info about a specific streamer
+    def print_streamer_by_streamer_id(self, streamer_id):
+        print(self.streamers.get(streamer_id))
+
+    def print_streamer_by_io_id(self, io_id):
+        streamer_id = self.streamers.io_to_streamer_lookup[io_id]
+        print('io_id:', io_id, 'streamer_id:', streamer_id)
+        print(self.streamers.get(streamer_id))
+
 # ==============================================================================
 # RUN
 # ==============================================================================

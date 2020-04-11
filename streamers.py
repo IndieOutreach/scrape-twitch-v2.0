@@ -387,12 +387,17 @@ class Streamers():
         cloned.streamers = {}
         for streamer_id, streamer in self.streamers.items():
             cloned.streamers[streamer_id] = streamer.clone()
-        cloned.io_to_streamer_lookup = self.io_to_streamer_lookup
-        cloned.streamer_to_io_lookup = self.streamer_to_io_lookup
+        cloned.io_to_streamer_lookup  = self.__clone_dict(self.io_to_streamer_lookup)
+        cloned.streamer_to_io_lookup  = self.__clone_dict(self.streamer_to_io_lookup)
         cloned.num_streamers_per_file = self.num_streamers_per_file
-        cloned.known_missing_videos = self.known_missing_videos
+        cloned.known_missing_videos   = self.known_missing_videos.clone()
         return cloned
 
+    def __clone_dict(self, d):
+        new_dict = {}
+        for key, value in d.items():
+            new_dict[key] = value
+        return new_dict
 
     # get ----------------------------------------------------------------------
 
@@ -530,11 +535,38 @@ class Streamers():
 
     # merges this Streamers object with another Streamers collection
     def merge(self, streamers2):
+        print('merging streamers...')
+        self.known_missing_videos.merge(streamers2.known_missing_videos)
+        print('checkpoint a')
+        self.io_to_streamer_lookup = self.__merge_dicts(self.io_to_streamer_lookup, streamers2.io_to_streamer_lookup)
+        print('checkpoint b')
+        self.streamer_to_io_lookup = self.__merge_dicts(self.streamer_to_io_lookup, streamers2.streamer_to_io_lookup)
+        print('checkpoint c')
+        print('len(streamers1) = ', len(self.streamers))
+        print('len(streamers2) = ', len(streamers2.streamers))
+
+        # merge streamers objects
+        i, j = 0, 0
         for id, streamer in streamers2.streamers.items():
+            if (j >= 2000):
+                #print(i, ":", id)
+                j = 0
+            i += 1
+            j += 1
             if (id in self.streamers):
                 self.streamers[id].merge(streamer)
+                test = self.streamers[id]
             else:
-                self.add_streamer_obj(streamers2)
+                self.add_streamer_obj(streamer.clone())
+        print('finish merging streamers...')
+
+
+    # merges d2 onto d1 and returns that object
+    def __merge_dicts(self, d1, d2):
+        for k, v in d2.items():
+            if (k not in d1):
+                d1[k] = v
+        return d1
 
     # File I/O -----------------------------------------------------------------
 
@@ -549,6 +581,9 @@ class Streamers():
                 if (io_id in self.io_to_streamer_lookup):
                     streamer_id = self.io_to_streamer_lookup[io_id]
                     streamer = self.get(streamer_id)
+                    if (streamer == False):
+                        print("io_id =", io_id, "\nstreamer_id =", streamer_id)
+                        sys.exit()
                     streamers_to_export.append(streamer.to_exportable_dict())
             filename = folderpath + '/streamers_' + str(batch_index + 1) + '.csv'
             self.__export_to_csv(filename, streamers_to_export)
@@ -777,9 +812,34 @@ class Streamers():
 # - store them in /data/streamers_missing_videos.csv
 class StreamersMissingVideos():
 
-    def __init__(self, filename):
-        self.filename = filename
-        self.streamers = self.load_from_csv(filename)
+    def __init__(self, filename = False):
+        self.streamers = {}
+        if (filename != False):
+            self.filename = filename
+            self.streamers = self.load_from_csv(filename)
+
+    # creates a copy of StreamersMissingVideos object
+    def clone(self):
+        cloned = StreamersMissingVideos()
+        cloned.filename = self.filename
+        cloned.streamers = {}
+        for streamer_id, val in self.streamers.items():
+            cloned.streamers[streamer_id] = self.__clone_dict(val)
+        return cloned
+
+    def __clone_dict(self, d):
+        new_dict = {}
+        for k, v in d.items():
+            new_dict[k] = v
+        return new_dict
+
+    # merges another StreamersMissingVideos object with this one
+    def merge(self, smv2):
+        for streamer_id, val in smv2.streamers.items():
+            if (streamer_id not in self.streamers):
+                self.streamers[streamer_id] = val
+
+    # Set + Get ----------------------------------------------------------------
 
     def add(self, streamer_id):
         self.streamers[streamer_id] = {'streamer_id': streamer_id, 'time': int(time.time())}
@@ -795,6 +855,8 @@ class StreamersMissingVideos():
         for key in self.streamers:
             ids.append(key)
         return ids
+
+    # File I/O -----------------------------------------------------------------
 
     def export_to_csv(self, filename = False):
         if (filename == False):

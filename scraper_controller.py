@@ -15,10 +15,20 @@
 import sys
 import time
 import json
+import datetime
 import threading
 
 from scraper import *
 
+# Constants --------------------------------------------------------------------
+
+__no_limit             = 9999999 # <- int that represents positive infinity
+__videos_batch_size    = 10      # <- number of streamers to scrape video info for (before saving results and starting again)
+__followers_batch_size = 500     # <- number of streamers to scrape follower info for (before saving results and starting again)
+
+
+__streamers_folderpath              = './data/streamers'
+__streamers_missing_videos_filepath = './data/streamers_missing_videos.csv'
 
 # Shared Resources -------------------------------------------------------------
 
@@ -37,37 +47,48 @@ worker_threads = {} # form: { thread_id: Thread object }
 
 # Scrape Livestreams -----------------------------------------------------------
 
+# scrapes all livestreams currently active on Twitch
 def thread_scrape_livestreams(thread_id):
     credentials = open('credentials.json')
-    scraper = Scraper(json.load(credentials))
+    scraper = Scraper(json.load(credentials), 'headless')
 
     while(1):
         if (work[thread_id]['status'] == 'waiting'):
             work[thread_id]['status'] = 'working'
-            print('thread: ', thread_id)
-
+            print(str(datetime.datetime.now().time()), thread_id, ": woken up by main thread. Starting work now.")
+            work[thread_id]['streamers'] = scraper.compile_streamers_db(work[thread_id]['streamers'])
+            print(str(datetime.datetime.now().time()), thread_id, ": work complete; sleeping for 15 minutes")
             work[thread_id]['status'] = 'done'
-            time.sleep(1) # * 60 * 15) # sleep for 15 minutes
+            time.sleep(15) # * 60 * 15) # sleep for 15 minutes
 
 # Scrape Videos ----------------------------------------------------------------
 
+# scrapes in batches of 10 streamers at a time so videos don't get lost
 def thread_scrape_videos(thread_id):
     credentials = open('credentials.json')
-    scraper = Scraper(json.load(credentials))
+    scraper = Scraper(json.load(credentials), 'headless')
 
     while(1):
-        print('thread: ', thread_id)
-        time.sleep(5) # never sleep
+        if (work[thread_id]['status'] == 'waiting'):
+            work[thread_id]['status'] = 'working'
+            print(str(datetime.datetime.now().time()), thread_id, ": woken up by main thread. Starting work now.")
+            work[thread_id]['streamers'] = scraper.add_videos_to_streamers_db(work[thread_id]['streamers'], __no_limit, __videos_batch_size)
+            print(str(datetime.datetime.now().time()), thread_id, ": work complete; sleeping until woken up by Main Thread")
+            work[thread_id]['status'] = 'done'
 
 # Scrape Followers -------------------------------------------------------------
 
 def thread_scrape_followers(thread_id):
     credentials = open('credentials.json')
-    scraper = Scraper(json.load(credentials))
-    
+    scraper = Scraper(json.load(credentials), 'headless')
+
     while(1):
-        print('thread: ', thread_id)
-        time.sleep(2) # sleep for
+        if (work[thread_id]['status'] == 'waiting'):
+            work[thread_id]['status'] = 'working'
+            print(str(datetime.datetime.now().time()), thread_id, ": woken up by main thread. Starting work now.")
+            work[thread_id]['streamers'] = scraper.add_followers_to_streamers_db(work[thread_id]['streamers'], __followers_batch_size)
+            print(str(datetime.datetime.now().time()), thread_id, ": work complete; sleeping until woken up by Main Thread")
+            work[thread_id]['status'] = 'done'
 
 
 # ==============================================================================
@@ -77,7 +98,7 @@ def thread_scrape_followers(thread_id):
 def main_thread():
 
     # instantiate Streamers
-    streamers = Streamers()
+    streamers = Streamers(__streamers_folderpath, __streamers_missing_videos_filepath)
 
     # instantiate Threads and start them running
     worker_threads['livestreams'] = threading.Thread(target=thread_scrape_livestreams, args=('livestreams', ))
@@ -87,22 +108,21 @@ def main_thread():
         work[thread_id] = {'streamers': streamers.clone(), 'status': 'waiting'} # <- TODO: change to streamers.clone()
         worker_threads[thread_id].start()
 
-    # wait until there is work to be done
-    while(1):
 
+    # wait (spin) until there is work to be done
+    # TODO: change this to be a conditional variable
+    while(1):
         for thread_id in work:
             if (work[thread_id]['status'] == 'done'):
                 streamers.merge(work[thread_id]['streamers'])
+                streamers.export_to_csv(__streamers_folderpath)
                 work[thread_id]['streamers'] = streamers.clone()
-                work[thread_id]['status'] = 'working'
-                streamers.export_to_csv()
-        time.sleep(1)
+                work[thread_id]['status'] = 'waiting'
+                time.sleep(1)
 
-
+    print('We should not have been able to get here...')
 
 # Run --------------------------------------------------------------------------
 
 if (__name__ == '__main__'):
-    print('This program is not functional on this commit.')
-    return
     main_thread()
