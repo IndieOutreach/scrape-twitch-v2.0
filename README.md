@@ -207,19 +207,19 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Main thread in scraper_controller.py can now identify dead threads and restart them
+ - scraper_controller.py uses conditional variables now to avoid spinlocking
 
 
 #### What is still in development? Known Issues?
 Still in development
  - Logs are not thread safe
  - StreamersMissingVideos is not thread safe and does not export
- - Change threads to use conditional variables instead of spinlocking
 
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
  - Add a "wipe" function so tests.py can clear the /test/ folder before running  
+ - Clean up 'testing', 'production', 'headless' modes in Scraper class
 
 #### Future Roadmap
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)
