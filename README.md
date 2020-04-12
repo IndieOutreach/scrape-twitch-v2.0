@@ -207,17 +207,16 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - scraper_controller.py can now scrape livestreams, videos, and followers using threads (with known issue for livestreams_thread .merge())
- - Add merge and clone functions for StreamersMissingVideos() classes
- - Add headless option for Scraper that scraper_controller.py uses
+ - Add Streamers.max_io_id parameter to fix runtime issues with Streamers.get_new_io_id() and Streamers.merge()
+ - Add a 'needs_update' status type to threads in controller.py.  
+    - This fixes the edge case where 'videos' and 'followers' threads could be given a Streamers object with no work to do, so they sit there forever because the main thread never updates that Streamers object.
 
 #### What is still in development? Known Issues?
 Still in development
-- Logs are not thread safe
-- StreamersMissingVideos is not thread safe
+ - Logs are not thread safe
+ - StreamersMissingVideos is not thread safe
+ - Main thread needs to be able to identify when a worker thread panics and needs to be restarted
 
-Problem:
-- When all threads are running, the Streamers.merge() doesn't terminate after the livestreams thread finishes its work
 
 #### What's next?
  - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs

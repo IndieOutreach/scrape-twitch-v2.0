@@ -370,6 +370,7 @@ class Streamers():
         self.streamers = {}
         self.io_to_streamer_lookup = {}
         self.streamer_to_io_lookup = {}
+        self.max_io_id = 0
         self.num_streamers_per_file = 1000
         self.known_missing_videos = StreamersMissingVideos(missing_streamers_filename)
         if (folderpath):
@@ -377,7 +378,10 @@ class Streamers():
 
 
     # sets streamers to be empty, effectively wiping the Streamers object
+    # this function isn't built yet!
     def reset(self):
+        print('this function streamers.reset() is not built yet!')
+        return
         self.streamers = {}
 
 
@@ -389,6 +393,7 @@ class Streamers():
             cloned.streamers[streamer_id] = streamer.clone()
         cloned.io_to_streamer_lookup  = self.__clone_dict(self.io_to_streamer_lookup)
         cloned.streamer_to_io_lookup  = self.__clone_dict(self.streamer_to_io_lookup)
+        cloned.max_io_id              = self.max_io_id
         cloned.num_streamers_per_file = self.num_streamers_per_file
         cloned.known_missing_videos   = self.known_missing_videos.clone()
         return cloned
@@ -478,11 +483,16 @@ class Streamers():
         return ids
 
     # returns a new, valid IndieOutreach ID
-    def get_new_io_id(self):
-        ids = self.get_used_io_ids()
-        largest_id = ids[-1] if (len(ids) > 0) else 0
-        return largest_id + 1
+    # -> this function will increment max_io_id, so only call it when you actually want to write a Streamer with a new io_id
+    # -> otherwise, call .get_new_io_id() so it doesn't write
+    def assign_new_io_id(self):
+        self.max_io_id += 1
+        return self.max_io_id
 
+    # returns a new, valid IO ID
+    # -> this function is read only
+    def get_new_io_id(self):
+        return self.max_io_id + 1
 
     # insert -------------------------------------------------------------------
 
@@ -493,7 +503,7 @@ class Streamers():
         streamer_id = twitch_obj['user_id'] if ('user_id' in twitch_obj) else twitch_obj['id']
         streamer_id = int(streamer_id) if (not isinstance(streamer_id, int)) else streamer_id
         if (streamer_id not in self.streamers):
-            twitch_obj['io_id'] = self.get_new_io_id()
+            twitch_obj['io_id'] = self.assign_new_io_id()
             self.streamers[streamer_id] = Streamer(twitch_obj)
             self.io_to_streamer_lookup[twitch_obj['io_id']] = streamer_id
             self.streamer_to_io_lookup[streamer_id] = twitch_obj['io_id']
@@ -522,7 +532,7 @@ class Streamers():
             return
 
         streamer_id = streamer_obj.streamer_id
-        new_io_id = self.get_new_io_id()
+        new_io_id = self.assign_new_io_id()
         streamer_obj.set_io_id(new_io_id)
         self.streamers[streamer_id] = streamer_obj
         self.io_to_streamer_lookup[new_io_id] = streamer_id
@@ -534,31 +544,19 @@ class Streamers():
     # - Functions for merging two different Streamers collections
 
     # merges this Streamers object with another Streamers collection
+    # note: we do not attempt to merge .max_io_id value here because the act of calling .add_streamer_obj() will do that for us
     def merge(self, streamers2):
-        print('merging streamers...')
         self.known_missing_videos.merge(streamers2.known_missing_videos)
-        print('checkpoint a')
         self.io_to_streamer_lookup = self.__merge_dicts(self.io_to_streamer_lookup, streamers2.io_to_streamer_lookup)
-        print('checkpoint b')
         self.streamer_to_io_lookup = self.__merge_dicts(self.streamer_to_io_lookup, streamers2.streamer_to_io_lookup)
-        print('checkpoint c')
-        print('len(streamers1) = ', len(self.streamers))
-        print('len(streamers2) = ', len(streamers2.streamers))
 
         # merge streamers objects
-        i, j = 0, 0
         for id, streamer in streamers2.streamers.items():
-            if (j >= 2000):
-                #print(i, ":", id)
-                j = 0
-            i += 1
-            j += 1
             if (id in self.streamers):
                 self.streamers[id].merge(streamer)
                 test = self.streamers[id]
             else:
                 self.add_streamer_obj(streamer.clone())
-        print('finish merging streamers...')
 
 
     # merges d2 onto d1 and returns that object
@@ -613,6 +611,12 @@ class Streamers():
             filename = folderpath + '/streamers_' + str(i) + '.csv'
             keep_going = self.__load_from_csv(filename)
             i += 1
+
+        # find the max io_id in Streamers collection
+        self.max_io_id = 0
+        for streamer_id, streamer in self.streamers.items():
+            if (streamer.io_id > self.max_io_id):
+                self.max_io_id = streamer.io_id
 
 
     # opens a file and loads streamers into this object

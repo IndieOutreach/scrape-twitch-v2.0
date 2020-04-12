@@ -30,15 +30,23 @@ __followers_batch_size = 500     # <- number of streamers to scrape follower inf
 __streamers_folderpath              = './data/streamers'
 __streamers_missing_videos_filepath = './data/streamers_missing_videos.csv'
 
+__sleep_between_livestreams = 60 # <- 15 minutes
+__sleep_between_videos      = 60
+__sleep_between_followers   = 60
+
+
 # Shared Resources -------------------------------------------------------------
 
 # a shared variable that stores the work/results by each thread.
 # Because threads access this object using their thread_id, all active threads can access this variable at the same time
 work           = {} # form: { thread_id: { streamers: Streamers(), status: string } }
                     # status can be 1 of the following:
-                    # - ready:   the main thread is done with its action and this thread is now ready to work
-                    # - working: thread is actively working, main thread leaves this thread alone
-                    # - done:    thread is done with its work and is now waiting for the main thread to take its action
+                    # - ready:        the main thread is done with its action and this thread is now ready to work
+                    # - working:      thread is actively working, main thread leaves this thread alone
+                    # - done:         thread is done with its work and is now waiting for the main thread to take its action
+                    # - needs_update: thread *needs* its Streamers() object updated in order to run properly
+                    #                  - For example: the Videos thread has a Streamers() object with .get_ids_that_need_video_data() == 0
+                    #                               -> this thread will be useless until the Main Thread updates Streamer
 worker_threads = {} # form: { thread_id: Thread object }
 
 # ==============================================================================
@@ -55,11 +63,11 @@ def thread_scrape_livestreams(thread_id):
     while(1):
         if (work[thread_id]['status'] == 'waiting'):
             work[thread_id]['status'] = 'working'
-            print(str(datetime.datetime.now().time()), thread_id, ": woken up by main thread. Starting work now.")
+            print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
             work[thread_id]['streamers'] = scraper.compile_streamers_db(work[thread_id]['streamers'])
-            print(str(datetime.datetime.now().time()), thread_id, ": work complete; sleeping for 15 minutes")
+            print(str(datetime.datetime.now().time()), '[', thread_id, "] : work complete; sleeping for 15 minutes")
             work[thread_id]['status'] = 'done'
-            time.sleep(15) # * 60 * 15) # sleep for 15 minutes
+            time.sleep(__sleep_between_livestreams)
 
 # Scrape Videos ----------------------------------------------------------------
 
@@ -70,11 +78,16 @@ def thread_scrape_videos(thread_id):
 
     while(1):
         if (work[thread_id]['status'] == 'waiting'):
-            work[thread_id]['status'] = 'working'
-            print(str(datetime.datetime.now().time()), thread_id, ": woken up by main thread. Starting work now.")
-            work[thread_id]['streamers'] = scraper.add_videos_to_streamers_db(work[thread_id]['streamers'], __no_limit, __videos_batch_size)
-            print(str(datetime.datetime.now().time()), thread_id, ": work complete; sleeping until woken up by Main Thread")
-            work[thread_id]['status'] = 'done'
+            if (len(work[thread_id]['streamers'].get_ids_that_need_video_data()) > 0):
+                work[thread_id]['status'] = 'working'
+                print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
+                work[thread_id]['streamers'] = scraper.add_videos_to_streamers_db(work[thread_id]['streamers'], __no_limit, __videos_batch_size)
+                print(str(datetime.datetime.now().time()), '[', thread_id, "] : work complete; sleeping until woken up by Main Thread")
+                work[thread_id]['status'] = 'done'
+            else:
+                work[thread_id]['status'] = 'needs_update'
+                time.sleep(1 * 60 ) # sleep for 30 minutes
+
 
 # Scrape Followers -------------------------------------------------------------
 
@@ -84,11 +97,15 @@ def thread_scrape_followers(thread_id):
 
     while(1):
         if (work[thread_id]['status'] == 'waiting'):
-            work[thread_id]['status'] = 'working'
-            print(str(datetime.datetime.now().time()), thread_id, ": woken up by main thread. Starting work now.")
-            work[thread_id]['streamers'] = scraper.add_followers_to_streamers_db(work[thread_id]['streamers'], __followers_batch_size)
-            print(str(datetime.datetime.now().time()), thread_id, ": work complete; sleeping until woken up by Main Thread")
-            work[thread_id]['status'] = 'done'
+            if (len(work[thread_id]['streamers'].get_ids_with_missing_follower_data()) > 0):
+                work[thread_id]['status'] = 'working'
+                print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
+                work[thread_id]['streamers'] = scraper.add_followers_to_streamers_db(work[thread_id]['streamers'], __followers_batch_size)
+                print(str(datetime.datetime.now().time()), '[', thread_id, "] : work complete; sleeping until woken up by Main Thread")
+                work[thread_id]['status'] = 'done'
+            else:
+                work[thread_id]['status'] = 'needs_update'
+                time.sleep(1 * 60 ) # sleep for 30 minutes
 
 
 # ==============================================================================
@@ -112,15 +129,23 @@ def main_thread():
     # wait (spin) until there is work to be done
     # TODO: change this to be a conditional variable
     while(1):
+
+        # If any threads have finished their work, save their results and restart them
         for thread_id in work:
             if (work[thread_id]['status'] == 'done'):
                 streamers.merge(work[thread_id]['streamers'])
                 streamers.export_to_csv(__streamers_folderpath)
                 work[thread_id]['streamers'] = streamers.clone()
                 work[thread_id]['status'] = 'waiting'
-                time.sleep(1)
 
-    print('We should not have been able to get here...')
+        # update any threads who can't do work because their streamers clone is expired
+        if (work['videos']['status'] == 'needs_update'):
+            work['videos']['streamers'] = streamers.clone()
+            work['videos']['status'] = 'waiting'
+        if (work['followers']['status'] == 'needs_update'):
+            work['followers']['streamers'] = streamers.clone()
+            work['followers']['status'] = 'waiting'
+
 
 # Run --------------------------------------------------------------------------
 
