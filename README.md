@@ -207,15 +207,14 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add Streamers.max_io_id parameter to fix runtime issues with Streamers.get_new_io_id() and Streamers.merge()
- - Add a 'needs_update' status type to threads in controller.py.  
-    - This fixes the edge case where 'videos' and 'followers' threads could be given a Streamers object with no work to do, so they sit there forever because the main thread never updates that Streamers object.
+ - Main thread in scraper_controller.py can now identify dead threads and restart them
+
 
 #### What is still in development? Known Issues?
 Still in development
  - Logs are not thread safe
- - StreamersMissingVideos is not thread safe
- - Main thread needs to be able to identify when a worker thread panics and needs to be restarted
+ - StreamersMissingVideos is not thread safe and does not export
+ - Change threads to use conditional variables instead of spinlocking
 
 
 #### What's next?

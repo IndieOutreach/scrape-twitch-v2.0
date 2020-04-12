@@ -22,14 +22,24 @@ from scraper import *
 
 # Constants --------------------------------------------------------------------
 
+# unique IDs that each thread uses to access its dedicated resources
+__thread_id_livestreams = 'livestreams'
+__thread_id_videos      = 'videos     '
+__thread_id_followers   = 'followers  '
+
+
+# limit values to pass into Scraper API calls
 __no_limit             = 9999999 # <- int that represents positive infinity
 __videos_batch_size    = 10      # <- number of streamers to scrape video info for (before saving results and starting again)
 __followers_batch_size = 500     # <- number of streamers to scrape follower info for (before saving results and starting again)
 
 
+# filepaths to load Streamers from
 __streamers_folderpath              = './data/streamers'
 __streamers_missing_videos_filepath = './data/streamers_missing_videos.csv'
 
+
+# Time each thread will sleep for after executing
 __sleep_between_livestreams = 60 # <- 15 minutes
 __sleep_between_videos      = 60
 __sleep_between_followers   = 60
@@ -112,18 +122,37 @@ def thread_scrape_followers(thread_id):
 # Main
 # ==============================================================================
 
+# creates and runs a worker thread
+def create_worker_thread(streamers, thread_id):
+
+    # determine what function thread should run
+    starting_function = False
+    if (thread_id == __thread_id_livestreams):
+        starting_function = thread_scrape_livestreams
+    elif (thread_id == __thread_id_videos):
+        starting_function = thread_scrape_videos
+    elif (thread_id == __thread_id_followers):
+        starting_function = thread_scrape_followers
+    else:
+        return # <- no other threads should exist
+
+
+    # start the thread
+    worker_threads[thread_id] = threading.Thread(target=starting_function, args=(thread_id, ))
+    work[thread_id] = {'streamers': streamers.clone(), 'status': 'waiting'}
+    worker_threads[thread_id].start()
+
+
+# Main thread is in charge of dispatching worker threads and saving results to server
 def main_thread():
 
     # instantiate Streamers
     streamers = Streamers(__streamers_folderpath, __streamers_missing_videos_filepath)
 
     # instantiate Threads and start them running
-    worker_threads['livestreams'] = threading.Thread(target=thread_scrape_livestreams, args=('livestreams', ))
-    worker_threads['videos']      = threading.Thread(target=thread_scrape_videos, args=('videos', ))
-    worker_threads['followers']   = threading.Thread(target=thread_scrape_followers, args=('followers', ))
-    for thread_id in worker_threads:
-        work[thread_id] = {'streamers': streamers.clone(), 'status': 'waiting'} # <- TODO: change to streamers.clone()
-        worker_threads[thread_id].start()
+    create_worker_thread(streamers, __thread_id_livestreams)
+    create_worker_thread(streamers, __thread_id_videos)
+    create_worker_thread(streamers, __thread_id_followers)
 
 
     # wait (spin) until there is work to be done
@@ -139,13 +168,15 @@ def main_thread():
                 work[thread_id]['status'] = 'waiting'
 
         # update any threads who can't do work because their streamers clone is expired
-        if (work['videos']['status'] == 'needs_update'):
-            work['videos']['streamers'] = streamers.clone()
-            work['videos']['status'] = 'waiting'
-        if (work['followers']['status'] == 'needs_update'):
-            work['followers']['streamers'] = streamers.clone()
-            work['followers']['status'] = 'waiting'
+        for thread_id in work:
+            if (work[thread_id]['status'] == 'needs_update'):
+                work[thread_id]['streamers'] = streamers.clone()
+                work[thread_id]['status'] = 'waiting'
 
+        # revive any threads that died -> THREADS NEVER DIE!
+        for thread_id in worker_threads:
+            if (not worker_threads[thread_id].is_alive()):
+                create_worker_thread(streamers, thread_id)
 
 # Run --------------------------------------------------------------------------
 
