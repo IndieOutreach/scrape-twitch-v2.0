@@ -54,17 +54,17 @@ __thread_timeout = 60 * 60 * 1.5  # <- time it takes for a thread to be consider
 
 # a shared variable that stores the work/results by each thread.
 # Because threads access this object using their thread_id, all active threads can access this variable at the same time
-work           = {} # form: { thread_id: { streamers: Streamers(), status: string, last_started_work: int_date } }
-                    # status can be 1 of the following:
-                    #   - waiting:      the main thread is done with its action and this thread is now ready to work
-                    #   - working:      thread is actively working, main thread leaves this thread alone
-                    #   - done:         thread is done with its work and is now waiting for the main thread to take its action
-                    #   - needs_update: thread *needs* its Streamers() object updated in order to run properly
-                    #                  - For example: the Videos thread has a Streamers() object with .get_ids_that_need_video_data() == 0
-                    #                               -> this thread will be useless until the Main Thread updates Streamer
-                    # streamers is a Streamers() object that the thread is working on / updating
-                    # last_started_work is a unix epoch date indicating when the thread was last called to start working
-                    #   - If last_started_work is too long ago, we presume that thre thread is lost and the main thread will kill and restart it
+work = {}   # form: { thread_id: { streamers: Streamers(), status: string, last_started_work: int_date } }
+            # status can be 1 of the following:
+            #   - waiting:      the main thread is done with its action and this thread is now ready to work
+            #   - working:      thread is actively working, main thread leaves this thread alone
+            #   - done:         thread is done with its work and is now waiting for the main thread to take its action
+            #   - needs_update: thread *needs* its Streamers() object updated in order to run properly
+            #                  - For example: the Videos thread has a Streamers() object with .get_ids_that_need_video_data() == 0
+            #                               -> this thread will be useless until the Main Thread updates Streamer
+            # streamers is a Streamers() object that the thread is working on / updating
+            # last_started_work is a unix epoch date indicating when the thread was last called to start working
+            #   - If last_started_work is too long ago, we presume that thre thread is lost and the main thread will kill and restart it
 
 worker_threads = {} # form: { thread_id: Thread object }
 thread_locks   = {} # form: { thread_id: Conditional Variable }
@@ -250,6 +250,7 @@ def create_worker_thread(streamers, thread_id):
     worker_threads[thread_id].start()
 
 
+# Main Thread ------------------------------------------------------------------
 
 # Main thread is in charge of dispatching worker threads and saving results to server
 def main_thread():
@@ -285,6 +286,8 @@ def main_thread():
 
                 streamers.merge(work[thread_id]['streamers'])
                 streamers.export_to_csv(__streamers_folderpath)
+                if (thread_id == __thread_id_videos):
+                    streamers.known_missing_videos.export_to_csv(__streamers_missing_videos_filepath)
                 work[thread_id]['streamers'] = streamers.clone()
                 work[thread_id]['status'] = 'waiting'
 

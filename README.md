@@ -207,14 +207,13 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Clean up print statements in threads in scraper_controller.py
+ - scraper_controller.py now saves StreamersMissingVideos object
+
 
 
 #### What is still in development? Known Issues?
 Still in development
  - Logs are not thread safe
- - StreamersMissingVideos is not thread safe and does not export
- - Move Filesystem Read/Write functions over to a separate thread, to protect main thread
 
 
 #### What's next?
