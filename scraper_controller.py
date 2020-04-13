@@ -45,19 +45,27 @@ __sleep_between_livestreams   = 60      # <- 15 minutes
 __sleep_when_out_of_videos    = 60 * 30 # <- 30 minutes
 __sleep_when_out_of_followers = 60      # <- 15 minutes
 
+# Syncing threads
+__thread_timeout = 60 * 60 * 1.5  # <- time it takes for a thread to be considered 'lost' by main thread
+                                  # We arbitrarily pick 1.5 hours as our limit.
+                                  # No thread operation should take this long. If it does, something has gone wrong
 
 # Shared Resources -------------------------------------------------------------
 
 # a shared variable that stores the work/results by each thread.
 # Because threads access this object using their thread_id, all active threads can access this variable at the same time
-work           = {} # form: { thread_id: { streamers: Streamers(), status: string } }
+work           = {} # form: { thread_id: { streamers: Streamers(), status: string, last_started_work: int_date } }
                     # status can be 1 of the following:
-                    # - ready:        the main thread is done with its action and this thread is now ready to work
-                    # - working:      thread is actively working, main thread leaves this thread alone
-                    # - done:         thread is done with its work and is now waiting for the main thread to take its action
-                    # - needs_update: thread *needs* its Streamers() object updated in order to run properly
+                    #   - waiting:      the main thread is done with its action and this thread is now ready to work
+                    #   - working:      thread is actively working, main thread leaves this thread alone
+                    #   - done:         thread is done with its work and is now waiting for the main thread to take its action
+                    #   - needs_update: thread *needs* its Streamers() object updated in order to run properly
                     #                  - For example: the Videos thread has a Streamers() object with .get_ids_that_need_video_data() == 0
                     #                               -> this thread will be useless until the Main Thread updates Streamer
+                    # streamers is a Streamers() object that the thread is working on / updating
+                    # last_started_work is a unix epoch date indicating when the thread was last called to start working
+                    #   - If last_started_work is too long ago, we presume that thre thread is lost and the main thread will kill and restart it
+
 worker_threads = {} # form: { thread_id: Thread object }
 thread_locks   = {} # form: { thread_id: Conditional Variable }
                     # -> This CV works as a way for the Main Thread to wake up a worker thread
@@ -73,13 +81,21 @@ def thread_scrape_livestreams(thread_id):
     credentials = open('credentials.json')
     scraper = Scraper(json.load(credentials), 'headless')
 
+    print(str(datetime.datetime.now().time()), '[', thread_id, "] : Initialized")
+
     while(1):
 
         # wait for thread to be woken up by main thread
         wait_for_work_from_main(thread_id)
 
+        # wait_for_work_from_main() can also let a thread that has expired through, so check if we need to kill it
+        if (check_if_thread_expired(thread_id)):
+            thread_locks[thread_id].release()
+            break
+
         # do the work for the thread
         work[thread_id]['status'] = 'working'
+        work[thread_id]['last_started_work'] = get_current_time()
         print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
         work[thread_id]['streamers'] = scraper.compile_streamers_db(work[thread_id]['streamers'])
 
@@ -90,6 +106,8 @@ def thread_scrape_livestreams(thread_id):
         time.sleep(__sleep_between_livestreams)
         wake_main_thread()
 
+    print(str(datetime.datetime.now().time()), '[', thread_id, "] : terminating...")
+
 
 
 # Scrape Videos ----------------------------------------------------------------
@@ -99,14 +117,22 @@ def thread_scrape_videos(thread_id):
     credentials = open('credentials.json')
     scraper = Scraper(json.load(credentials), 'headless')
 
+    print(str(datetime.datetime.now().time()), '[', thread_id, "] : Initialized")
+
     while(1):
 
         # wait for thread to be woken up by main thread
         wait_for_work_from_main(thread_id)
 
+        # wait_for_work_from_main() can also let a thread that has expired through, so check if we need to kill it
+        if (check_if_thread_expired(thread_id)):
+            thread_locks[thread_id].release()
+            break
+
         # do the work for the thread
+        work[thread_id]['status'] = 'working'
+        work[thread_id]['last_started_work'] = get_current_time()
         if (len(work[thread_id]['streamers'].get_ids_that_need_video_data()) > 0):
-            work[thread_id]['status'] = 'working'
             print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
             work[thread_id]['streamers'] = scraper.add_videos_to_streamers_db(work[thread_id]['streamers'], __no_limit, __videos_batch_size)
             print(str(datetime.datetime.now().time()), '[', thread_id, "] : work complete; sleeping until woken up by Main Thread")
@@ -119,6 +145,8 @@ def thread_scrape_videos(thread_id):
         thread_locks[thread_id].release()
         wake_main_thread()
 
+    print(str(datetime.datetime.now().time()), '[', thread_id, "] : terminating...")
+
 
 
 # Scrape Followers -------------------------------------------------------------
@@ -127,14 +155,22 @@ def thread_scrape_followers(thread_id):
     credentials = open('credentials.json')
     scraper = Scraper(json.load(credentials), 'headless')
 
+    print(str(datetime.datetime.now().time()), '[', thread_id, "] : Initialized")
+
     while(1):
 
         # wait for thread to be woken up by main thread
         wait_for_work_from_main(thread_id)
 
+        # wait_for_work_from_main() can also let a thread that has expired through, so check if we need to kill it
+        if (check_if_thread_expired(thread_id)):
+            thread_locks[thread_id].release()
+            break
+
         # do the work for the thread
+        work[thread_id]['status'] = 'working'
+        work[thread_id]['last_started_work'] = get_current_time()
         if (len(work[thread_id]['streamers'].get_ids_with_missing_follower_data()) > 0):
-            work[thread_id]['status'] = 'working'
             print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
             work[thread_id]['streamers'] = scraper.add_followers_to_streamers_db(work[thread_id]['streamers'], __followers_batch_size)
             print(str(datetime.datetime.now().time()), '[', thread_id, "] : work complete; sleeping until woken up by Main Thread")
@@ -143,9 +179,12 @@ def thread_scrape_followers(thread_id):
             work[thread_id]['status'] = 'needs_update'
             time.sleep(__sleep_when_out_of_followers)
 
+
         # work is done -> notify the main thread
         thread_locks[thread_id].release()
         wake_main_thread()
+
+    print(str(datetime.datetime.now().time()), '[', thread_id, "] : terminating...")
 
 
 # ==============================================================================
@@ -155,7 +194,7 @@ def thread_scrape_followers(thread_id):
 # function that a thread calls when it wants to wait for a lock
 def wait_for_work_from_main(thread_id):
     thread_locks[thread_id].acquire()
-    while (not work[thread_id]['status'] == 'waiting'):
+    while ((not work[thread_id]['status'] == 'waiting') and (not check_if_thread_expired(thread_id))):
         thread_locks[thread_id].wait()
     return
 
@@ -169,12 +208,20 @@ def wake_main_thread():
 # returns True if there is work to do for Main thread
 def check_if_main_should_awake():
     for thread_id in work:
-        if ((work[thread_id]['status'] == 'done') or (work[thread_id]['status'] == 'needs_update')):
+        if (work[thread_id]['status'] == 'done'):
             return True
     for thread_id in worker_threads:
         if (not worker_threads[thread_id].is_alive()):
             return True
     return False
+
+
+def check_if_thread_expired(thread_id):
+    return (get_current_time() - work[thread_id]['last_started_work'] >= __thread_timeout)
+
+
+def get_current_time():
+    return int(time.time())
 
 # creates and runs a worker thread
 def create_worker_thread(streamers, thread_id):
@@ -194,7 +241,7 @@ def create_worker_thread(streamers, thread_id):
     # start the thread
     worker_threads[thread_id] = threading.Thread(target=starting_function, args=(thread_id, ))
     thread_locks[thread_id]   = threading.Condition()
-    work[thread_id]           = {'streamers': streamers.clone(), 'status': 'waiting'}
+    work[thread_id]           = {'streamers': streamers.clone(), 'status': 'waiting', 'last_started_work': get_current_time()}
     worker_threads[thread_id].start()
 
 

@@ -207,13 +207,15 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - scraper_controller.py uses conditional variables now to avoid spinlocking
+ - Add timestamps so main thread can flag threads who've been running too long to terminate and be restarted
 
 
 #### What is still in development? Known Issues?
 Still in development
  - Logs are not thread safe
  - StreamersMissingVideos is not thread safe and does not export
+ - Move Filesystem Read/Write functions over to a separate thread, to protect main thread
+ - Clean up print statements from threads in scraper_controller.py
 
 
 #### What's next?
@@ -230,3 +232,4 @@ Still in development
  - Add timeout handling to API requests
  - Add a caching system for API requests so we can spoof API requests
  - Spin off schema from README.md to schema.md
+ - Compress the files in /data to help keep file sizes smaller
