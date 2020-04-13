@@ -207,7 +207,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add timestamps so main thread can flag threads who've been running too long to terminate and be restarted
+ - Clean up print statements in threads in scraper_controller.py
 
 
 #### What is still in development? Known Issues?
@@ -215,7 +215,6 @@ Still in development
  - Logs are not thread safe
  - StreamersMissingVideos is not thread safe and does not export
  - Move Filesystem Read/Write functions over to a separate thread, to protect main thread
- - Clean up print statements from threads in scraper_controller.py
 
 
 #### What's next?

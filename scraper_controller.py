@@ -81,7 +81,7 @@ def thread_scrape_livestreams(thread_id):
     credentials = open('credentials.json')
     scraper = Scraper(json.load(credentials), 'headless')
 
-    print(str(datetime.datetime.now().time()), '[', thread_id, "] : Initialized")
+    print_from_thread(thread_id, 'initialized')
 
     while(1):
 
@@ -96,18 +96,17 @@ def thread_scrape_livestreams(thread_id):
         # do the work for the thread
         work[thread_id]['status'] = 'working'
         work[thread_id]['last_started_work'] = get_current_time()
-        print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
+        print_from_thread(thread_id, 'woken up by main thread; starting work now')
         work[thread_id]['streamers'] = scraper.compile_streamers_db(work[thread_id]['streamers'])
 
         # done
-        print(str(datetime.datetime.now().time()), '[', thread_id, "] : work complete; sleeping for 15 minutes")
+        print_from_thread(thread_id, 'work complete; sleeping until woken up by main thread')
         work[thread_id]['status'] = 'done'
         thread_locks[thread_id].release()
-        time.sleep(__sleep_between_livestreams)
         wake_main_thread()
+        time.sleep(__sleep_between_livestreams)
 
-    print(str(datetime.datetime.now().time()), '[', thread_id, "] : terminating...")
-
+    print_from_thread(thread_id, 'terminating')
 
 
 # Scrape Videos ----------------------------------------------------------------
@@ -117,7 +116,7 @@ def thread_scrape_videos(thread_id):
     credentials = open('credentials.json')
     scraper = Scraper(json.load(credentials), 'headless')
 
-    print(str(datetime.datetime.now().time()), '[', thread_id, "] : Initialized")
+    print_from_thread(thread_id, 'initialized')
 
     while(1):
 
@@ -133,9 +132,9 @@ def thread_scrape_videos(thread_id):
         work[thread_id]['status'] = 'working'
         work[thread_id]['last_started_work'] = get_current_time()
         if (len(work[thread_id]['streamers'].get_ids_that_need_video_data()) > 0):
-            print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
+            print_from_thread(thread_id, 'woken up by main thread; starting work now')
             work[thread_id]['streamers'] = scraper.add_videos_to_streamers_db(work[thread_id]['streamers'], __no_limit, __videos_batch_size)
-            print(str(datetime.datetime.now().time()), '[', thread_id, "] : work complete; sleeping until woken up by Main Thread")
+            print_from_thread(thread_id, 'work complete; sleeping until woken up by main thread')
             work[thread_id]['status'] = 'done'
         else:
             work[thread_id]['status'] = 'needs_update'
@@ -145,8 +144,7 @@ def thread_scrape_videos(thread_id):
         thread_locks[thread_id].release()
         wake_main_thread()
 
-    print(str(datetime.datetime.now().time()), '[', thread_id, "] : terminating...")
-
+    print_from_thread(thread_id, 'terminating')
 
 
 # Scrape Followers -------------------------------------------------------------
@@ -154,8 +152,7 @@ def thread_scrape_videos(thread_id):
 def thread_scrape_followers(thread_id):
     credentials = open('credentials.json')
     scraper = Scraper(json.load(credentials), 'headless')
-
-    print(str(datetime.datetime.now().time()), '[', thread_id, "] : Initialized")
+    print_from_thread(thread_id, 'initialized')
 
     while(1):
 
@@ -171,9 +168,9 @@ def thread_scrape_followers(thread_id):
         work[thread_id]['status'] = 'working'
         work[thread_id]['last_started_work'] = get_current_time()
         if (len(work[thread_id]['streamers'].get_ids_with_missing_follower_data()) > 0):
-            print(str(datetime.datetime.now().time()), '[', thread_id, "] : woken up by main thread. Starting work now.")
+            print_from_thread(thread_id, "woken up by main thread; starting work now")
             work[thread_id]['streamers'] = scraper.add_followers_to_streamers_db(work[thread_id]['streamers'], __followers_batch_size)
-            print(str(datetime.datetime.now().time()), '[', thread_id, "] : work complete; sleeping until woken up by Main Thread")
+            print_from_thread(thread_id, "work complete; sleeping until woken by main thread")
             work[thread_id]['status'] = 'done'
         else:
             work[thread_id]['status'] = 'needs_update'
@@ -184,7 +181,7 @@ def thread_scrape_followers(thread_id):
         thread_locks[thread_id].release()
         wake_main_thread()
 
-    print(str(datetime.datetime.now().time()), '[', thread_id, "] : terminating...")
+    print_from_thread(thread_id, "terminating...")
 
 
 # ==============================================================================
@@ -216,12 +213,20 @@ def check_if_main_should_awake():
     return False
 
 
+# returns True if a thread has been unproductive for too long and should be terminated
 def check_if_thread_expired(thread_id):
     return (get_current_time() - work[thread_id]['last_started_work'] >= __thread_timeout)
 
 
+# returns the current unix epoch time as an int
 def get_current_time():
     return int(time.time())
+
+
+# prints a message from thread with standard formatting
+def print_from_thread(thread_id, message):
+    print(str(datetime.datetime.now().time()), '[', thread_id, "] :", message)
+
 
 # creates and runs a worker thread
 def create_worker_thread(streamers, thread_id):
