@@ -458,6 +458,9 @@ class Scraper():
                 streamers.add_or_update_streamer(user)
                 streamers.add_stream_data(stream_lookup[user_id])
 
+        # record how many items were processed during the Twitch API's requests
+        self.twitchAPI.request_logs.set_number_of_items(len(streams))
+
         if (self.mode == 'production'):
 
             # log request stats
@@ -574,11 +577,13 @@ class Scraper():
                     streamers.add_stream_data(video)
 
 
+        # record how many items were processed during this interaction
+        self.twitchAPI.request_logs.set_number_of_items(streamers_to_scrape)
+
         if (self.mode == 'production'):
 
             # save logs
             self.twitchAPI.request_logs.print_stats()
-            num_streamers = streamer_limit if (len(streamer_ids) > streamer_limit) else len(streamer_ids)
             self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'videos', streamers_to_scrape)
 
             # save streamers object
@@ -629,6 +634,9 @@ class Scraper():
             num_followers = self.twitchAPI.get_followers(streamer_id)
             streamers.add_follower_data(streamer_id, num_followers)
 
+        # record how many items were processed during this interaction
+        self.twitchAPI.request_logs.set_number_of_items(num_streamers_to_process)
+        
         # save our results
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()

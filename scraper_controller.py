@@ -23,10 +23,10 @@ from scraper import *
 # Constants --------------------------------------------------------------------
 
 # unique IDs that each thread uses to access its dedicated resources
-__thread_id_main        = 'main       '
+__thread_id_main        = 'main'
 __thread_id_livestreams = 'livestreams'
-__thread_id_videos      = 'videos     '
-__thread_id_followers   = 'followers  '
+__thread_id_videos      = 'videos'
+__thread_id_followers   = 'followers'
 
 
 # limit values to pass into Scraper API calls
@@ -38,12 +38,16 @@ __followers_batch_size = 500     # <- number of streamers to scrape follower inf
 # filepaths to load Streamers from
 __streamers_folderpath              = './data/streamers'
 __streamers_missing_videos_filepath = './data/streamers_missing_videos.csv'
-
+__request_logs_filepath             = './logs/requests.csv'
 
 # Time each thread will sleep for after executing
-__sleep_between_livestreams   = 60      # <- 15 minutes
+__sleep_between_livestreams   = 60 * 15 # <- 15 minutes
 __sleep_when_out_of_videos    = 60 * 30 # <- 30 minutes
-__sleep_when_out_of_followers = 60      # <- 15 minutes
+__sleep_when_out_of_followers = 60 * 15 # <- 15 minutes
+if (True):
+    __sleep_between_livestreams   = 10 # <- values used during testing
+    __sleep_when_out_of_videos    = 10
+    __sleep_when_out_of_followers = 10
 
 # Syncing threads
 __thread_timeout = 60 * 60 * 1.5  # <- time it takes for a thread to be considered 'lost' by main thread
@@ -54,7 +58,7 @@ __thread_timeout = 60 * 60 * 1.5  # <- time it takes for a thread to be consider
 
 # a shared variable that stores the work/results by each thread.
 # Because threads access this object using their thread_id, all active threads can access this variable at the same time
-work = {}   # form: { thread_id: { streamers: Streamers(), status: string, last_started_work: int_date } }
+work = {}   # form: { thread_id: { streamers: Streamers(), status: string, last_started_work: int_date, request_logs: TimeLogs() } }
             # status can be 1 of the following:
             #   - waiting:      the main thread is done with its action and this thread is now ready to work
             #   - working:      thread is actively working, main thread leaves this thread alone
@@ -65,6 +69,9 @@ work = {}   # form: { thread_id: { streamers: Streamers(), status: string, last_
             # streamers is a Streamers() object that the thread is working on / updating
             # last_started_work is a unix epoch date indicating when the thread was last called to start working
             #   - If last_started_work is too long ago, we presume that thre thread is lost and the main thread will kill and restart it
+            # request_logs is an instance of TimeLogs() that that thread's scraper is using
+            #   - this instance is merged into the TimeLogs instance on the main thread to be exported
+            #   - request_logs is wiped/renewed every time the thread starts working
 
 worker_threads = {} # form: { thread_id: Thread object }
 thread_locks   = {} # form: { thread_id: Conditional Variable }
@@ -94,6 +101,7 @@ def thread_scrape_livestreams(thread_id):
             break
 
         # do the work for the thread
+        scraper.twitchAPI.request_logs.reset()
         work[thread_id]['status'] = 'working'
         work[thread_id]['last_started_work'] = get_current_time()
         print_from_thread(thread_id, 'woken up by main thread; starting work now')
@@ -101,6 +109,7 @@ def thread_scrape_livestreams(thread_id):
 
         # done
         print_from_thread(thread_id, 'work complete; sleeping until woken up by main thread')
+        work[thread_id]['request_logs'] = scraper.twitchAPI.request_logs.clone()
         work[thread_id]['status'] = 'done'
         thread_locks[thread_id].release()
         wake_main_thread()
@@ -131,10 +140,12 @@ def thread_scrape_videos(thread_id):
         # do the work for the thread
         work[thread_id]['status'] = 'working'
         work[thread_id]['last_started_work'] = get_current_time()
+        scraper.twitchAPI.request_logs.reset()
         if (len(work[thread_id]['streamers'].get_ids_that_need_video_data()) > 0):
             print_from_thread(thread_id, 'woken up by main thread; starting work now')
             work[thread_id]['streamers'] = scraper.add_videos_to_streamers_db(work[thread_id]['streamers'], __no_limit, __videos_batch_size)
             print_from_thread(thread_id, 'work complete; sleeping until woken up by main thread')
+            work[thread_id]['request_logs'] = scraper.twitchAPI.request_logs.clone()
             work[thread_id]['status'] = 'done'
         else:
             work[thread_id]['status'] = 'needs_update'
@@ -167,10 +178,12 @@ def thread_scrape_followers(thread_id):
         # do the work for the thread
         work[thread_id]['status'] = 'working'
         work[thread_id]['last_started_work'] = get_current_time()
+        scraper.twitchAPI.request_logs.reset()
         if (len(work[thread_id]['streamers'].get_ids_with_missing_follower_data()) > 0):
             print_from_thread(thread_id, "woken up by main thread; starting work now")
             work[thread_id]['streamers'] = scraper.add_followers_to_streamers_db(work[thread_id]['streamers'], __followers_batch_size)
             print_from_thread(thread_id, "work complete; sleeping until woken by main thread")
+            work[thread_id]['request_logs'] = scraper.twitchAPI.request_logs.clone()
             work[thread_id]['status'] = 'done'
         else:
             work[thread_id]['status'] = 'needs_update'
@@ -225,7 +238,7 @@ def get_current_time():
 
 # prints a message from thread with standard formatting
 def print_from_thread(thread_id, message):
-    print(str(datetime.datetime.now().time()), '[', thread_id, "] :", message)
+    print('{} [ {:11} ] : {}'.format(datetime.datetime.now().time(), thread_id, message))
 
 
 # creates and runs a worker thread
@@ -246,7 +259,12 @@ def create_worker_thread(streamers, thread_id):
     # start the thread
     worker_threads[thread_id] = threading.Thread(target=starting_function, args=(thread_id, ))
     thread_locks[thread_id]   = threading.Condition()
-    work[thread_id]           = {'streamers': streamers.clone(), 'status': 'waiting', 'last_started_work': get_current_time()}
+    work[thread_id] = {
+        'streamers': streamers.clone(),
+        'status': 'waiting',
+        'last_started_work': get_current_time(),
+        'request_logs': False
+    }
     worker_threads[thread_id].start()
 
 
@@ -284,10 +302,16 @@ def main_thread():
 
                 thread_locks[thread_id].acquire()
 
+                # save work done by thread
                 streamers.merge(work[thread_id]['streamers'])
                 streamers.export_to_csv(__streamers_folderpath)
+
+                # log thread actions
                 if (thread_id == __thread_id_videos):
                     streamers.known_missing_videos.export_to_csv(__streamers_missing_videos_filepath)
+                work[thread_id]['request_logs'].export_to_csv(__request_logs_filepath, thread_id)
+
+                # reset the thread and get it ready to work
                 work[thread_id]['streamers'] = streamers.clone()
                 work[thread_id]['status'] = 'waiting'
 

@@ -207,13 +207,12 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - scraper_controller.py now saves StreamersMissingVideos object
-
+ - scraper_controller.py now records TimeLogs for Twitch API requests
 
 
 #### What is still in development? Known Issues?
 Still in development
- - Logs are not thread safe
+ - FilterLogs are not implemented in scraper_controller.py
 
 
 #### What's next?

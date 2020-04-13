@@ -25,10 +25,38 @@ class TimeLogs():
 
     def __init__(self, action_categories):
         self.logs = {} # { request_name: [ {request_obj}, ... ] }
+        self.action_categories = action_categories
         for type in action_categories:
             self.logs[type] = []
         self.time_initialized = self.__get_current_time()
+        self.items_processed = 0
 
+
+    # returns a copy of this TimeLogs instance
+    def clone(self):
+        cloned = TimeLogs(self.action_categories)
+        cloned.time_initialized = self.time_initialized
+        cloned.items_processed = self.items_processed
+        cloned.logs = {}
+        for category in self.logs:
+            cloned.logs[category] = []
+            for row in self.logs[category]:
+                cloned.logs[category].append(self.__clone_dict(row))
+        return cloned
+
+    def __clone_dict(self, d):
+        cloned = {}
+        for k, v in d.items():
+            cloned[k] = v
+        return cloned
+
+    # resets TimeLogs object
+    def reset(self):
+        self.logs = {}
+        for type in self.action_categories:
+            self.logs[type] = []
+        self.time_initialized = self.__get_current_time()
+        self.items_processed = 0
 
     # Actions ------------------------------------------------------------------
 
@@ -70,6 +98,9 @@ class TimeLogs():
     # returns the current time in milliseconds
     def __get_current_time(self):
         return int(round(time.time() * 1000))
+
+    def set_number_of_items(self, num):
+        self.items_processed = num
 
     # Stats --------------------------------------------------------------------
 
@@ -142,7 +173,11 @@ class TimeLogs():
 
     # NOTE: TimeLogs is an individual log entry.
     # -> In order to save and not overwrite previous logs, need to load them as an array and add current TimeLog to the end
-    def export_to_csv(self, filename, content_type, num_items):
+    def export_to_csv(self, filename, content_type, num_items = -1):
+
+        if (num_items == -1):
+            num_items = self.items_processed
+
         # get content ready
         content = self.load_from_csv(filename)
         content.append({
