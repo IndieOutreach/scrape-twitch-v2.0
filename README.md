@@ -23,6 +23,9 @@ This scraping tool is built in Python 3.7.6 and uses the requests library for in
 
 ## Folders and Files
 
+#### scraper_controller.py
+scraper_controller is a multithreaded program that handles all the scraping for streamers by calling upon scraper.py. You will want to envoke scraper_controller once and it will just keep running in the background until you kill it or the terminal closes.
+
 #### scraper.py
 Used for scraping data from the Twitch and IGDB APIs
 
@@ -203,12 +206,14 @@ Keeps track of actions and requests made by scraper.py
     - form: { 'num_streamers': int, 'min': int, 'max': int, 'mean': double, 'median': int, 'std_dev': double }
  - `totals` - shows the total number of different items of interest in the dataset
     - form: { 'num_streamers': int, 'num_livestreams': int, 'num_videos': int, 'games_from_livestreams': int, 'games_from_videos': int}
+ - `filespace` - shows the size of the files that make up the Streamers db
+    - form: { 'n': int, 'mean': double, 'median': int, 'min': int, 'max': int, 'std_dev': double, 'total_in_mb': double }
+    - values in this object are in bytes (with the exception of 'n' which is in # of files and 'total_in_mb', which is in megabytes)
 
 ## Development Notes
 
 #### What is new in this commit?
-- Switch names of Scraper modes from ['testing', 'production', 'headless'] to ['testing', 'production', 'cli']
-    - Note: production is now the mode that gets run by scraper_controller.py and cli is the mode used by scraper.py if you run it from the command line
+
 
 
 #### What is still in development? Known Issues?
