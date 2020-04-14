@@ -19,6 +19,7 @@ import datetime
 import threading
 
 from scraper import *
+from insights import *
 
 # Constants --------------------------------------------------------------------
 
@@ -275,6 +276,8 @@ def main_thread():
 
     # instantiate Streamers
     streamers = Streamers(__streamers_folderpath, __streamers_missing_videos_filepath)
+    insights  = Insights('headless')
+    insights.set_logging(True)
 
     # initialize Conditional Variable for main thread
     thread_locks[__thread_id_main] = threading.Condition()
@@ -310,6 +313,9 @@ def main_thread():
                 if (thread_id == __thread_id_videos):
                     streamers.known_missing_videos.export_to_csv(__streamers_missing_videos_filepath)
                 work[thread_id]['request_logs'].export_to_csv(__request_logs_filepath, thread_id)
+                if (thread_id == __thread_id_livestreams):
+                    insights.set_data('streamers', streamers)
+                    insights.get_snapshot_of_streamers_db()
 
                 # reset the thread and get it ready to work
                 work[thread_id]['streamers'] = streamers.clone()

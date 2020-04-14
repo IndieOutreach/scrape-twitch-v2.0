@@ -457,7 +457,7 @@ def test_timelogs(credentials):
     tests = get_empty_test(test_names)
 
     twitchAPI = TwitchAPI(credentials['twitch'])
-    test_csv_file = './test/runtime.csv'
+    test_csv_file = './test/requests.csv'
 
     # initialize 0: -> make sure logs are initialized to be empty
     for key, value in twitchAPI.request_logs.logs.items():

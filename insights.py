@@ -20,8 +20,14 @@ from streamers import *
 
 class Insights():
 
-    def __init__(self, dataset = 'production'):
-        self.set_dataset(dataset)
+    def __init__(self, dataset = False):
+        if (dataset != False):
+            self.set_dataset(dataset)
+        else:
+            self.mode = False
+            self.streamers = False
+            self.games = False
+            self.streamerLogs = False
         self.logging_mode = False
         return
 
@@ -36,7 +42,12 @@ class Insights():
             self.mode = 'testing'
             self.streamers = Streamers('./test/streamers')
             self.games = Games('./test/games.csv')
-            self.streamerlogs = GeneralLogs('./test/streamer_insights.csv')
+            self.streamerslogs = GeneralLogs('./test/streamer_insights.csv')
+        elif (mode == 'headless'):
+            self.mode = 'headless'
+            self.streamers = False
+            self.games = False
+            self.streamerslogs = GeneralLogs('./logs/streamer_insights.csv')
 
     def reload_data(self):
         self.set_dataset(self.mode)
@@ -44,6 +55,16 @@ class Insights():
 
     def set_logging(self, mode):
         self.logging_mode = mode
+
+    # manually sets a specific type of data (instead of loading from filesystem)
+    # for example, data_obj could be a Streamers() or Games() object
+    def set_data(self, type, data_obj):
+        if (type == 'streamers'):
+            self.streamers = data_obj
+        elif (type == 'games'):
+            self.games = data_obj
+        elif (type == 'streamerslogs'):
+            self.streamerslogs = data_obj
 
 
     # Streamers: Scraping ------------------------------------------------------
@@ -417,7 +438,7 @@ def print_dict(d):
         print(k, "\n ->", v, "\n")
 
 def run():
-    insights = Insights()
+    insights = Insights('production')
     results = insights.get_snapshot_of_streamers_db()
     print_dict(results)
 

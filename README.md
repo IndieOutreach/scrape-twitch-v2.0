@@ -207,12 +207,11 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - scraper_controller.py now records TimeLogs for Twitch API requests
+ - scraper_controller.py now logs streamer_insights every time the 'scrape livestreams' threads executes
 
 
 #### What is still in development? Known Issues?
-Still in development
- - FilterLogs are not implemented in scraper_controller.py
+
 
 
 #### What's next?
@@ -225,8 +224,8 @@ Still in development
  - Compile the [keyword, genre, theme, platform] alias tables for IGDB
  - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
  - convert tests.py to use argparse for consistency
- - Add `reset_logs` function to Scraper so you can re-use the same Scraper instance between different scraping procedures and not double-up on log data
  - Add timeout handling to API requests
  - Add a caching system for API requests so we can spoof API requests
  - Spin off schema from README.md to schema.md
  - Compress the files in /data to help keep file sizes smaller
+ - Get social media info about streamers

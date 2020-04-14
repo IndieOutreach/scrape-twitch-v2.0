@@ -335,10 +335,10 @@ class Scraper():
                 'games': './data/games.csv',
                 'streamers': './data/streamers',
                 'streamers_missing_videos': './data/streamers_missing_videos.csv',
-                'logs': './logs/runtime.csv',
+                'logs': './logs/requests.csv',
                 'filterlogs': './logs/filters.csv'
             }
-            self.insights = Insights()
+            self.insights = Insights('production')
             self.insights.set_logging(True)
 
         elif (mode == 'testing'):
@@ -347,7 +347,7 @@ class Scraper():
                 'games': './test/games.csv',
                 'streamers': './test/streamers',
                 'streamers_missing_videos': './test/streamers_missing_videos.csv',
-                'logs': './test/runtime.csv',
+                'logs': './test/requests.csv',
                 'filterlogs': './test/filterlogs.csv'
             }
             self.insights = Insights('testing')
@@ -359,7 +359,7 @@ class Scraper():
                 'games': './data/games.csv',
                 'streamers': './data/streamers',
                 'streamers_missing_videos': './data/streamers_missing_videos.csv',
-                'logs': './logs/runtime.csv',
+                'logs': './logs/requests.csv',
                 'filterlogs': './logs/filters.csv'
             }
             self.print_mode_on = False
@@ -636,7 +636,7 @@ class Scraper():
 
         # record how many items were processed during this interaction
         self.twitchAPI.request_logs.set_number_of_items(num_streamers_to_process)
-        
+
         # save our results
         if (self.mode == 'production'):
             self.twitchAPI.request_logs.print_stats()
