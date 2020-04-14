@@ -7,6 +7,7 @@
 # - streamers.csv
 #
 
+import os
 import sys
 import math
 
@@ -78,6 +79,7 @@ class Insights():
     # - How many follower_count objects does a streamer typically have?
     # - What is the breakdown of languages used by streamers?
     # - What is the average number of games livestreamed? in videos?
+    # - How much filespace does storing these streamers take?
     def get_snapshot_of_streamers_db(self):
 
         results = {
@@ -88,7 +90,8 @@ class Insights():
             'livestreamed_past_day': {'percentage': 0, 'number': 0},
             'livestreamed_past_week': {'percentage': 0, 'number': 0},
             'has_view_data_past_day': {'percentage': 0, 'number': 0},
-            'languages': {}
+            'languages': {},
+            'filespace': {}
         }
 
         # variables
@@ -157,11 +160,17 @@ class Insights():
         # Q: What is the total number of streamers in dataset? videos? livestreams? games?
         results['totals'] = self.get_totals()
 
+        # Q: How much filespace does storing the Streamers dataset take up?
+        results['filespace'] = self.get_filesizes_for_streamers()
+
         # log this insight
         if (self.logging_mode == True):
             self.streamerslogs.add(results)
             self.streamerslogs.export_to_csv()
         return results
+
+
+
 
     # gets data about Streamer.stream_history values
     # - min, max, mean, median, std_dev number of livestreams a streamer has.
@@ -416,6 +425,58 @@ class Insights():
         stats['games_from_livestreams'] = len(games_from_livestreams)
         stats['games_from_videos'] = len(games_from_videos)
         return stats
+
+    # gets {mean, std_dev, min, max, median} filesizes for files that comprise the streamers data store
+    # -> filesizes are in bytes
+    def get_filesizes_for_streamers(self):
+        stats = {'n': 0, 'mean': 0, 'min': -1, 'max': -1, 'median': 0, 'std_dev': 0, 'total_in_mb': 0}
+
+        # extract filesizes
+        i = 1
+        filesizes = []
+        while(True):
+            try:
+                data = os.stat('./data/streamers/streamers_' + str(i) + '.csv')
+                filesizes.append(data.st_size)
+            except IOError:
+                break
+            i += 1
+
+        # return if nothing else can be calculated
+        stats['n'] = len(filesizes)
+        if (stats['n'] == 0):
+            return stats
+
+        # get median
+        filesizes.sort()
+        midpoint = int(len(filesizes) / 2)
+        stats['median'] = filesizes[midpoint]
+
+        # get mean values
+        for fs in filesizes:
+            stats['mean'] += fs
+            stats['max'] = fs if  (fs > stats['max']) else stats['max']
+            stats['min'] = fs if ((fs < stats['min']) or (stats['min'] < 0)) else stats['min']
+        stats['mean'] = stats['mean'] / stats['n']
+
+        # get variance -> std_dev
+        for fs in filesizes:
+            stats['std_dev'] += (stats['mean'] - fs) ** 2
+        if (len(filesizes) > 1):
+            stats['std_dev'] = stats['std_dev'] / (stats['n'] - 1)
+        stats['std_dev'] = math.sqrt(stats['std_dev'])
+
+        # calculate total filesize
+        for fs in filesizes:
+            stats['total_in_mb'] += fs / 1000000
+
+
+        # round values and return
+        stats['mean']        = round(stats['mean'], 2)
+        stats['std_dev']     = round(stats['std_dev'], 2)
+        stats['total_in_mb'] = round(stats['total_in_mb'], 2)
+        return stats
+
 
 
     # Specific Streamer --------------------------------------------------------

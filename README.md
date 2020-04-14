@@ -207,7 +207,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - scraper_controller.py now logs streamer_insights every time the 'scrape livestreams' threads executes
+ - Insights.get_snapshot_of_streamers_db() will now include stats about filesizes of files that make up the Streamers db
 
 
 #### What is still in development? Known Issues?
@@ -220,6 +220,8 @@ Keeps track of actions and requests made by scraper.py
  - Clean up 'testing', 'production', 'headless' modes in Scraper class
 
 #### Future Roadmap
+ - Write chron job for checking to make sure that the scraper_controller is running
+ - Add graphs to interpret logs
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)
  - Compile the [keyword, genre, theme, platform] alias tables for IGDB
  - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
@@ -229,3 +231,7 @@ Keeps track of actions and requests made by scraper.py
  - Spin off schema from README.md to schema.md
  - Compress the files in /data to help keep file sizes smaller
  - Get social media info about streamers
+
+#### Potential Debt
+ - scraper_controller.py creates a copy of Streamers in memory for each thread that needs to access Streamers
+    - When the total size of Streamers gets to be very large, creating multiple copies in memory may be untenable
