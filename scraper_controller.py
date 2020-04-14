@@ -87,7 +87,7 @@ thread_locks   = {} # form: { thread_id: Conditional Variable }
 # scrapes all livestreams currently active on Twitch
 def thread_scrape_livestreams(thread_id):
     credentials = open('credentials.json')
-    scraper = Scraper(json.load(credentials), 'headless')
+    scraper = Scraper(json.load(credentials), 'production')
 
     print_from_thread(thread_id, 'initialized')
 
@@ -124,7 +124,7 @@ def thread_scrape_livestreams(thread_id):
 # scrapes in batches of 10 streamers at a time so videos don't get lost
 def thread_scrape_videos(thread_id):
     credentials = open('credentials.json')
-    scraper = Scraper(json.load(credentials), 'headless')
+    scraper = Scraper(json.load(credentials), 'production')
 
     print_from_thread(thread_id, 'initialized')
 
@@ -163,7 +163,7 @@ def thread_scrape_videos(thread_id):
 
 def thread_scrape_followers(thread_id):
     credentials = open('credentials.json')
-    scraper = Scraper(json.load(credentials), 'headless')
+    scraper = Scraper(json.load(credentials), 'production')
     print_from_thread(thread_id, 'initialized')
 
     while(1):
@@ -276,7 +276,7 @@ def main_thread():
 
     # instantiate Streamers
     streamers = Streamers(__streamers_folderpath, __streamers_missing_videos_filepath)
-    insights  = Insights('headless')
+    insights  = Insights('production')
     insights.set_logging(True)
 
     # initialize Conditional Variable for main thread

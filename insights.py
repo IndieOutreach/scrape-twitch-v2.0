@@ -34,8 +34,8 @@ class Insights():
 
     # loads datasets
     def set_dataset(self, mode):
-        if (mode == 'production'):
-            self.mode = 'production'
+        if (mode == 'cli'):
+            self.mode = 'cli'
             self.streamers = Streamers('./data/streamers')
             self.games = Games('./data/games.csv')
             self.streamerslogs = GeneralLogs('./logs/streamer_insights.csv')
@@ -44,8 +44,8 @@ class Insights():
             self.streamers = Streamers('./test/streamers')
             self.games = Games('./test/games.csv')
             self.streamerslogs = GeneralLogs('./test/streamer_insights.csv')
-        elif (mode == 'headless'):
-            self.mode = 'headless'
+        elif (mode == 'production'):
+            self.mode = 'production'
             self.streamers = False
             self.games = False
             self.streamerslogs = GeneralLogs('./logs/streamer_insights.csv')
@@ -499,7 +499,7 @@ def print_dict(d):
         print(k, "\n ->", v, "\n")
 
 def run():
-    insights = Insights('production')
+    insights = Insights('cli')
     results = insights.get_snapshot_of_streamers_db()
     print_dict(results)
 

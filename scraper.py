@@ -319,7 +319,7 @@ class IGDBAPI():
 
 class Scraper():
 
-    def __init__(self, credentials, mode = 'production'):
+    def __init__(self, credentials, mode = 'cli'):
         self.twitchAPI = TwitchAPI(credentials['twitch'])
         self.igdbAPI = IGDBAPI(credentials['igdb'])
         self.print_mode_on = True
@@ -329,8 +329,8 @@ class Scraper():
 
     # lets user activate a different mode
     def set_mode(self, mode):
-        if (mode == 'production'):
-            self.mode = 'production'
+        if (mode == 'cli'):
+            self.mode = 'cli'
             self.filepaths = {
                 'games': './data/games.csv',
                 'streamers': './data/streamers',
@@ -338,7 +338,7 @@ class Scraper():
                 'logs': './logs/requests.csv',
                 'filterlogs': './logs/filters.csv'
             }
-            self.insights = Insights('production')
+            self.insights = Insights('cli')
             self.insights.set_logging(True)
 
         elif (mode == 'testing'):
@@ -353,8 +353,8 @@ class Scraper():
             self.insights = Insights('testing')
             self.insights.set_logging(True)
 
-        elif (mode == 'headless'):
-            self.mode = 'headless'
+        elif (mode == 'production'):
+            self.mode = 'production'
             self.filepaths = {
                 'games': './data/games.csv',
                 'streamers': './data/streamers',
@@ -399,11 +399,11 @@ class Scraper():
             for igdb_game_obj in search_results:
                 games.add_new_game(igdb_game_obj)
 
-            if (self.mode == 'production'):
+            if (self.mode == 'cli'):
                 games.print_stats()
             search_results, offset = self.igdbAPI.search_for_games(offset)
 
-        if (self.mode == 'production'):
+        if (self.mode == 'cli'):
             self.igdbAPI.request_logs.print_stats()
             num_games = len(games.get_ids())
             self.igdbAPI.request_logs.export_to_csv(self.filepaths['logs'], 'games', num_games)
@@ -461,7 +461,7 @@ class Scraper():
         # record how many items were processed during the Twitch API's requests
         self.twitchAPI.request_logs.set_number_of_items(len(streams))
 
-        if (self.mode == 'production'):
+        if (self.mode == 'cli'):
 
             # log request stats
             print('\n\nRequest Logs')
@@ -580,7 +580,7 @@ class Scraper():
         # record how many items were processed during this interaction
         self.twitchAPI.request_logs.set_number_of_items(streamers_to_scrape)
 
-        if (self.mode == 'production'):
+        if (self.mode == 'cli'):
 
             # save logs
             self.twitchAPI.request_logs.print_stats()
@@ -638,7 +638,7 @@ class Scraper():
         self.twitchAPI.request_logs.set_number_of_items(num_streamers_to_process)
 
         # save our results
-        if (self.mode == 'production'):
+        if (self.mode == 'cli'):
             self.twitchAPI.request_logs.print_stats()
             self.twitchAPI.request_logs.export_to_csv(self.filepaths['logs'], 'followers', num_streamers_to_process)
             streamers.export_to_csv(self.filepaths['streamers'])

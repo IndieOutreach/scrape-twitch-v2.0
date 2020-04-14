@@ -207,30 +207,43 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Insights.get_snapshot_of_streamers_db() will now include stats about filesizes of files that make up the Streamers db
+- Switch names of Scraper modes from ['testing', 'production', 'headless'] to ['testing', 'production', 'cli']
+    - Note: production is now the mode that gets run by scraper_controller.py and cli is the mode used by scraper.py if you run it from the command line
 
 
 #### What is still in development? Known Issues?
 
 
-
 #### What's next?
- - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
- - Add a "wipe" function so tests.py can clear the /test/ folder before running  
- - Clean up 'testing', 'production', 'headless' modes in Scraper class
+
+For making scraper_controller.py better
+ - Write chron job for checking to make sure that the scraper_controller is running
+ - Compress the files in /data to help keep file sizes smaller
+ - version logfiles by dates so that they don't get way too big as the program keeps running over the span of months
+ - Add timeout handling to API requests
+
 
 #### Future Roadmap
- - Write chron job for checking to make sure that the scraper_controller is running
- - Add graphs to interpret logs
+
+scraper_controller.py
+ - Add Games scraping capabilities
+    - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
+ - Data viz on scraping logs
+    - Add graphs to interpret logs
+
+Adding Scraping Features
  - Clean the IGDB keyword data (so "boss battles" has 1 ID instead of 5 user inputted ones)
  - Compile the [keyword, genre, theme, platform] alias tables for IGDB
- - Modify scraper.compile_games_db() so it can take in a CSV file and not search for games it already has
- - convert tests.py to use argparse for consistency
- - Add timeout handling to API requests
- - Add a caching system for API requests so we can spoof API requests
- - Spin off schema from README.md to schema.md
- - Compress the files in /data to help keep file sizes smaller
  - Get social media info about streamers
+ - create a TwitchToIGDB conversion table that converts game_names / twitch_game_ids to IGDB IDs
+ - Mixer Support!
+
+Low Priority
+ - Add a "wipe" function so tests.py can clear the /test/ folder before running  
+ - Spin off schema from README.md to schema.md
+ - convert tests.py to use argparse for consistency
+ - Add a caching system for API requests so we can spoof API requests
+
 
 #### Potential Debt
  - scraper_controller.py creates a copy of Streamers in memory for each thread that needs to access Streamers
