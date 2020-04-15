@@ -213,7 +213,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- logfiles are now versioned by dates in form : "filters[YYYY-MM].csv", "requests[YYYY-MM].csv", and "streamer_insights[YYYY-MM].csv"
+- worker threads are now flagged as daemons
 
 
 #### What is still in development? Known Issues?
@@ -226,7 +226,6 @@ For making scraper_controller.py better
  - Compress the files in /data to help keep file sizes smaller
  - Add timeout handling to API requests
  - Add StreamersMissingVideos data to Insights.get_snapshot_of_streamers_db()
- - Convert worker threads to be daemons so they terminate when main thread dies
 
 
 #### Future Roadmap

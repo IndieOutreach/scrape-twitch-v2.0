@@ -265,6 +265,7 @@ def create_worker_thread(streamers, thread_id):
         'last_started_work': get_current_time(),
         'request_logs': False
     }
+    worker_threads[thread_id].daemon = True
     worker_threads[thread_id].start()
 
 # request logs have a dynamically allocated filepath depending on the year/month
