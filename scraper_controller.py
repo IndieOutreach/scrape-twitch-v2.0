@@ -39,7 +39,6 @@ __followers_batch_size = 500     # <- number of streamers to scrape follower inf
 # filepaths to load Streamers from
 __streamers_folderpath              = './data/streamers'
 __streamers_missing_videos_filepath = './data/streamers_missing_videos.csv'
-__request_logs_filepath             = './logs/requests.csv'
 
 # Time each thread will sleep for after executing
 __sleep_between_livestreams   = 60 * 15 # <- 15 minutes
@@ -268,6 +267,10 @@ def create_worker_thread(streamers, thread_id):
     }
     worker_threads[thread_id].start()
 
+# request logs have a dynamically allocated filepath depending on the year/month
+# since scraper_controller is meant to run over long periods of time, the controller needs to call this function to refresh the name
+def get_request_logs_filepath():
+    return datetime.datetime.now().strftime("./logs/requests[%Y-%m].csv")
 
 # Main Thread ------------------------------------------------------------------
 
@@ -276,7 +279,8 @@ def main_thread():
 
     # instantiate Streamers
     streamers = Streamers(__streamers_folderpath, __streamers_missing_videos_filepath)
-    insights  = Insights('production')
+    current_month = datetime.datetime.now().strftime("%Y-%m")
+    insights  = Insights('production', current_month)
     insights.set_logging(True)
 
     # initialize Conditional Variable for main thread
@@ -312,8 +316,10 @@ def main_thread():
                 # log thread actions
                 if (thread_id == __thread_id_videos):
                     streamers.known_missing_videos.export_to_csv(__streamers_missing_videos_filepath)
-                work[thread_id]['request_logs'].export_to_csv(__request_logs_filepath, thread_id)
+                work[thread_id]['request_logs'].export_to_csv(get_request_logs_filepath(), thread_id)
                 if (thread_id == __thread_id_livestreams):
+                    current_month = datetime.datetime.now().strftime("%Y-%m")
+                    insights.set_month(current_month)
                     insights.set_data('streamers', streamers)
                     insights.get_snapshot_of_streamers_db()
 

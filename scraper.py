@@ -14,6 +14,7 @@ import time
 import math
 import requests
 import argparse
+import datetime
 
 from logs import *
 from games import *
@@ -329,14 +330,16 @@ class Scraper():
 
     # lets user activate a different mode
     def set_mode(self, mode):
+        current_month = datetime.datetime.now().strftime("%Y-%m")
+
         if (mode == 'cli'):
             self.mode = 'cli'
             self.filepaths = {
                 'games': './data/games.csv',
                 'streamers': './data/streamers',
                 'streamers_missing_videos': './data/streamers_missing_videos.csv',
-                'logs': './logs/requests.csv',
-                'filterlogs': './logs/filters.csv'
+                'logs': './logs/requests[' + current_month + '].csv',
+                'filterlogs': './logs/filters[' + current_month + '].csv'
             }
             self.insights = Insights('cli')
             self.insights.set_logging(True)
@@ -347,8 +350,8 @@ class Scraper():
                 'games': './test/games.csv',
                 'streamers': './test/streamers',
                 'streamers_missing_videos': './test/streamers_missing_videos.csv',
-                'logs': './test/requests.csv',
-                'filterlogs': './test/filterlogs.csv'
+                'logs': './test/requests[' + current_month + '].csv',
+                'filterlogs': './test/filterlogs[' + current_month + '].csv'
             }
             self.insights = Insights('testing')
             self.insights.set_logging(True)
@@ -359,14 +362,24 @@ class Scraper():
                 'games': './data/games.csv',
                 'streamers': './data/streamers',
                 'streamers_missing_videos': './data/streamers_missing_videos.csv',
-                'logs': './logs/requests.csv',
-                'filterlogs': './logs/filters.csv'
+                'logs': './logs/requests[' + current_month + '].csv',
+                'filterlogs': './logs/filters[' + current_month + '].csv'
             }
             self.print_mode_on = False
 
         # save any log changes and load the new logs object
         self.filterLogs.export_to_csv()
         self.filterLogs = FilterLogs(self.filepaths['filterlogs'])
+
+
+    def reload_filter_logs(self):
+        self.filterLogs.export_to_csv()
+        current_month = datetime.datetime.now().strftime("%Y-%m")
+        if (current_month != self.filterLogs.month):
+            if ((self.mode == 'production') or (self.mode == 'cli')):
+                self.filterLogs = FilterLogs('/logs/filters[' + current_month + '].csv')
+            elif (self.mode == 'testing'):
+                self.filterLogs = FilterLogs('/test/filters.csv')
 
 
     # prints if the mode is right
@@ -429,6 +442,7 @@ class Scraper():
         num_all_streams = len(streams)
         streams, view_breakdowns = self.__filter_streams_by_views(streams, 4)
         num_filtered = num_all_streams - len(streams)
+        self.reload_filter_logs()
         self.filterLogs.add_filter(num_all_streams, num_filtered, 4, view_breakdowns)
         self.filterLogs.export_to_csv()
 

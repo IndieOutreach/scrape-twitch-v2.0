@@ -21,9 +21,11 @@ from streamers import *
 
 class Insights():
 
-    def __init__(self, dataset = False):
+    def __init__(self, dataset = False, month = False):
+        month = datetime.datetime.now().strftime("%Y-%m") if (month == False) else month
+        self.month = month
         if (dataset != False):
-            self.set_dataset(dataset)
+            self.set_dataset(dataset, month)
         else:
             self.mode = False
             self.streamers = False
@@ -33,22 +35,22 @@ class Insights():
         return
 
     # loads datasets
-    def set_dataset(self, mode):
+    def set_dataset(self, mode, month):
         if (mode == 'cli'):
             self.mode = 'cli'
             self.streamers = Streamers('./data/streamers')
             self.games = Games('./data/games.csv')
-            self.streamerslogs = GeneralLogs('./logs/streamer_insights.csv')
+            self.streamerslogs = GeneralLogs('./logs/streamer_insights[' + month + '].csv')
         elif (mode == 'testing'):
             self.mode = 'testing'
             self.streamers = Streamers('./test/streamers')
             self.games = Games('./test/games.csv')
-            self.streamerslogs = GeneralLogs('./test/streamer_insights.csv')
+            self.streamerslogs = GeneralLogs('./test/streamer_insights[' + month + '].csv')
         elif (mode == 'production'):
             self.mode = 'production'
             self.streamers = False
             self.games = False
-            self.streamerslogs = GeneralLogs('./logs/streamer_insights.csv')
+            self.streamerslogs = GeneralLogs('./logs/streamer_insights[' + month + '].csv')
 
     def reload_data(self):
         self.set_dataset(self.mode)
@@ -66,6 +68,17 @@ class Insights():
             self.games = data_obj
         elif (type == 'streamerslogs'):
             self.streamerslogs = data_obj
+
+
+    # when given a "YYYY-mm" date stamp, update filepaths to reflect this month
+    def set_month(self, month):
+        if (month == self.month):
+            return
+        self.month = month
+        if ((self.mode == 'production') or (self.mode == 'cli')):
+            self.streamerslogs = GeneralLogs('./logs/streamer_insights[' + month + '].csv')
+        elif (self.mode == 'testing'):
+            self.streamerslogs = GeneralLogs('./test/streamer_insights[ ' + month + '].csv')
 
 
     # Streamers: Scraping ------------------------------------------------------

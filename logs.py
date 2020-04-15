@@ -13,6 +13,7 @@ import sys
 import csv
 import time
 import math
+import datetime
 
 # ==============================================================================
 # TimeLogs
@@ -220,6 +221,8 @@ class TimeLogs():
 class FilterLogs():
 
     def __init__(self, filename = False):
+        self.month = datetime.datetime.now().strftime("%Y-%m")
+
         if (filename != False):
             self.filename = filename if ('.csv' in filename) else filename + '.csv'
             self.content = self.load_from_csv(self.filename)
@@ -227,6 +230,10 @@ class FilterLogs():
             self.filename = False
             self.content = []
         return
+
+    def set_month(self):
+        self.month = datetime.datetime.now().strftime("%Y-%m")
+
 
     def add_filter(self, num_scraped, num_filtered, view_cutoff, breakdown_obj):
         self.content.append({
