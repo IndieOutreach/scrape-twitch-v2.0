@@ -14,8 +14,12 @@ import sys
 import csv
 import json
 import time
+import zipfile
 import datetime
 
+from zipfile import *
+from io import StringIO
+from io import TextIOWrapper
 csv.field_size_limit(sys.maxsize) # <- so csv can load very large fields
 
 
@@ -571,72 +575,67 @@ class Streamers():
     # exports all Streamer objects to .csv files, batched by their io_ids
     # file1 = (1,1000), file2=(1001, 2000), and so on
     def export_to_csv(self, folderpath):
-        num_batches = int(len(self.streamers) / self.num_streamers_per_file) + 1
-        for batch_index in range(num_batches):
-            streamers_to_export = []
-            for i in range(self.num_streamers_per_file):
-                io_id = batch_index * self.num_streamers_per_file + i + 1
-                if (io_id in self.io_to_streamer_lookup):
-                    streamer_id = self.io_to_streamer_lookup[io_id]
-                    streamer = self.get(streamer_id)
-                    if (streamer == False):
-                        print("io_id =", io_id, "\nstreamer_id =", streamer_id)
-                        sys.exit()
-                    streamers_to_export.append(streamer.to_exportable_dict())
-            filename = folderpath + '/streamers_' + str(batch_index + 1) + '.csv'
-            self.__export_to_csv(filename, streamers_to_export)
-
-
-    # helper function for self.export_to_csv() that actually writes streamers to that file
-    def __export_to_csv(self, filename, streamers = []):
         fieldnames = [
             'io_id', 'streamer_id', 'login', 'display_name', 'profile_image_url', 'view_counts', 'description',
             'follower_counts', 'language', 'stream_history'
         ]
-        filename = filename if ('.csv' in filename) else filename + '.csv'
-        with open(filename, 'w') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for streamer in streamers:
-                writer.writerow(streamer)
+        num_batches = int(len(self.streamers) / self.num_streamers_per_file) + 1
+
+        with ZipFile(folderpath + '/streamers.zip', 'w', ZIP_DEFLATED) as zip_file:
+
+            # loop through the batches of streamers (files)
+            for batch_index in range(num_batches):
+                streamers_to_export = []
+                for i in range(self.num_streamers_per_file):
+
+                    # get streamers file info together
+                    io_id = batch_index * self.num_streamers_per_file + i + 1
+                    if (io_id in self.io_to_streamer_lookup):
+                        streamer_id = self.io_to_streamer_lookup[io_id]
+                        streamer = self.get(streamer_id)
+                        if (streamer == False):
+                            print("io_id =", io_id, "\nstreamer_id =", streamer_id)
+                            sys.exit()
+                        streamers_to_export.append(streamer.to_exportable_dict())
+
+                # write streamers file to csv in the zip
+                string_buffer = StringIO()
+                filename = 'streamers_' + str(batch_index + 1) + '.csv'
+                writer = csv.DictWriter(string_buffer, fieldnames=fieldnames)
+                writer.writeheader()
+                for streamer in streamers_to_export:
+                    writer.writerow(streamer)
+                zip_file.writestr(filename, string_buffer.getvalue())
+
 
 
     # goes to a folder and starts loading all streamers_{n}.csv files at folderpath
     def load_from_folder(self, folderpath):
         self.streamers = {}
-        keep_going = True # <- we want to keep loading from files until we reach a file that DNE
-        i = 1
-        while(keep_going):
-            num_streamers = len(self.streamers)
-            filename = folderpath + '/streamers_' + str(i) + '.csv'
-            keep_going = self.__load_from_csv(filename)
-            i += 1
+        try:
+            with ZipFile(folderpath + '/streamers.zip') as zip_file:
+                i = 0
+                while(True):
+                    i += 1
+                    filename = 'streamers_' + str(i) + '.csv'
+                    if (filename in zip_file.namelist()):
+                        with zip_file.open(filename, 'r') as csvfile:
+                            reader = csv.DictReader(TextIOWrapper(csvfile, 'utf-8'))
+                            for row in reader:
+                                streamer = Streamer(row, True)
+                                self.streamers[streamer.streamer_id] = streamer
+                                self.io_to_streamer_lookup[streamer.io_id] = streamer.streamer_id
+                                self.streamer_to_io_lookup[streamer.streamer_id] = streamer.io_id
+                    else:
+                        break
+        except IOError:
+            print(folderpath + '/streamers.zip does not exist yet...')
 
         # find the max io_id in Streamers collection
         self.max_io_id = 0
         for streamer_id, streamer in self.streamers.items():
             if (streamer.io_id > self.max_io_id):
                 self.max_io_id = streamer.io_id
-
-
-    # opens a file and loads streamers into this object
-    # -> this function is used by self.load_from_folder
-    def __load_from_csv(self, filename):
-        filename = filename if ('.csv' in filename) else filename + '.csv'
-        try:
-            with open(filename) as csvfile:
-                reader = csv.DictReader(csvfile)
-                for row in reader:
-                    streamer = Streamer(row, True)
-                    self.streamers[streamer.streamer_id] = streamer
-                    self.io_to_streamer_lookup[streamer.io_id] = streamer.streamer_id
-                    self.streamer_to_io_lookup[streamer.streamer_id] = streamer.io_id
-
-        except IOError:
-            #print(filename, "does not exist yet")
-            return False
-
-        return True
 
 
     # Data Validation ----------------------------------------------------------

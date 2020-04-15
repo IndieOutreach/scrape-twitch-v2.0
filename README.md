@@ -213,17 +213,23 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- worker threads are now flagged as daemons
+- Streamers now loads from / exports directly to a .zip file that contains all the CSVs.
+
 
 
 #### What is still in development? Known Issues?
 
+Still in Development:
+ - Streamers.export_to_csv() should export to a temp .zip file and then delete the old DB after the export is done
+ - This is to mitigate the problems of "what if the main thread crashes during a write and the .zip file becomes incomplete/corrupted"
+
+Problem
+ - when first running scraper_controller.py, the 'followers' and 'videos' threads initialize but never start
 
 #### What's next?
 
 For making scraper_controller.py better
  - Write cron job for checking to make sure that the scraper_controller is running - cron_start_scraper.py
- - Compress the files in /data to help keep file sizes smaller
  - Add timeout handling to API requests
  - Add StreamersMissingVideos data to Insights.get_snapshot_of_streamers_db()
 

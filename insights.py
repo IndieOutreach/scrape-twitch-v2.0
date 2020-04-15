@@ -10,6 +10,12 @@
 import os
 import sys
 import math
+import zipfile
+
+from zipfile import *
+from io import StringIO
+from io import TextIOWrapper
+
 
 from logs import *
 from games import *
@@ -439,57 +445,68 @@ class Insights():
         stats['games_from_videos'] = len(games_from_videos)
         return stats
 
-    # gets {mean, std_dev, min, max, median} filesizes for files that comprise the streamers data store
+    # gets {mean, std_dev, min, max, median, total_in_mb} filesizes for files that comprise the streamers data store
     # -> filesizes are in bytes
     def get_filesizes_for_streamers(self):
-        stats = {'n': 0, 'mean': 0, 'min': -1, 'max': -1, 'median': 0, 'std_dev': 0, 'total_in_mb': 0}
 
-        # extract filesizes
+        # extract filesizes from zip file
         i = 1
-        filesizes = []
-        while(True):
-            try:
-                data = os.stat('./data/streamers/streamers_' + str(i) + '.csv')
-                filesizes.append(data.st_size)
-            except IOError:
-                break
-            i += 1
+        filesizes_uncompressed = []
+        filesizes_compressed = []
+        with ZipFile('./data/streamers/streamers.zip') as zip_file:
+            for filename in zip_file.namelist():
+                fileinfo = zip_file.getinfo(filename)
+                filesizes_uncompressed.append(fileinfo.file_size)
+                filesizes_compressed.append(fileinfo.compress_size)
 
-        # return if nothing else can be calculated
-        stats['n'] = len(filesizes)
+        # get most stats
+        stats_uncompressed = self.calc_stats_from_list_of_ints(filesizes_uncompressed)
+        stats_compressed   = self.calc_stats_from_list_of_ints(filesizes_compressed)
+
+        # get total_in_mb
+        total_uncompressed, total_compressed = 0, 0
+        for i in range(len(filesizes_uncompressed)):
+            total_uncompressed += filesizes_uncompressed[i] / 1000000
+            total_compressed   += filesizes_compressed[i] / 1000000
+
+        stats_uncompressed['total_in_mb'] = round(total_uncompressed, 2)
+        stats_compressed['total_in_mb']   = round(total_compressed, 2)
+
+        stats = {'compressed': stats_compressed, 'uncompressed': stats_uncompressed}
+        return stats
+
+
+    # compiles stats about a list of ints
+    def calc_stats_from_list_of_ints(self, list_of_ints):
+        stats = {'n': 0, 'mean': 0, 'min': -1, 'max': -1, 'median': 0, 'std_dev': 0}
+
+        stats['n'] = len(list_of_ints)
         if (stats['n'] == 0):
             return stats
 
         # get median
-        filesizes.sort()
-        midpoint = int(len(filesizes) / 2)
-        stats['median'] = filesizes[midpoint]
+        list_of_ints.sort()
+        midpoint = int(stats['n'] / 2)
+        stats['median'] = list_of_ints[midpoint]
 
         # get mean values
-        for fs in filesizes:
-            stats['mean'] += fs
-            stats['max'] = fs if  (fs > stats['max']) else stats['max']
-            stats['min'] = fs if ((fs < stats['min']) or (stats['min'] < 0)) else stats['min']
+        for val in list_of_ints:
+            stats['mean'] += val
+            stats['max'] = val if  (val > stats['max']) else stats['max']
+            stats['min'] = val if ((val < stats['min']) or (stats['min'] < 0)) else stats['min']
         stats['mean'] = stats['mean'] / stats['n']
 
         # get variance -> std_dev
-        for fs in filesizes:
-            stats['std_dev'] += (stats['mean'] - fs) ** 2
-        if (len(filesizes) > 1):
+        for val in list_of_ints:
+            stats['std_dev'] += (stats['mean'] - val) ** 2
+        if (stats['n'] > 1):
             stats['std_dev'] = stats['std_dev'] / (stats['n'] - 1)
         stats['std_dev'] = math.sqrt(stats['std_dev'])
 
-        # calculate total filesize
-        for fs in filesizes:
-            stats['total_in_mb'] += fs / 1000000
-
-
         # round values and return
-        stats['mean']        = round(stats['mean'], 2)
-        stats['std_dev']     = round(stats['std_dev'], 2)
-        stats['total_in_mb'] = round(stats['total_in_mb'], 2)
+        stats['mean']    = round(stats['mean'], 2)
+        stats['std_dev'] = round(stats['std_dev'], 2)
         return stats
-
 
 
     # Specific Streamer --------------------------------------------------------
