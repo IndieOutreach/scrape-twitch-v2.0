@@ -10,6 +10,7 @@
 
 # Imports ----------------------------------------------------------------------
 
+import os
 import sys
 import csv
 import json
@@ -581,32 +582,48 @@ class Streamers():
         ]
         num_batches = int(len(self.streamers) / self.num_streamers_per_file) + 1
 
-        with ZipFile(folderpath + '/streamers.zip', 'w', ZIP_DEFLATED) as zip_file:
+        try:
+            # write to disk in a temporary location so we don't overwrite our existing .zip
+            # -> we want to write to a different location just in case something errors during the write
+            with ZipFile(folderpath + '/streamers[TEMP].zip', 'w', ZIP_DEFLATED) as zip_file:
 
-            # loop through the batches of streamers (files)
-            for batch_index in range(num_batches):
-                streamers_to_export = []
-                for i in range(self.num_streamers_per_file):
+                # loop through the batches of streamers (files)
+                for batch_index in range(num_batches):
+                    streamers_to_export = []
+                    for i in range(self.num_streamers_per_file):
 
-                    # get streamers file info together
-                    io_id = batch_index * self.num_streamers_per_file + i + 1
-                    if (io_id in self.io_to_streamer_lookup):
-                        streamer_id = self.io_to_streamer_lookup[io_id]
-                        streamer = self.get(streamer_id)
-                        if (streamer == False):
-                            print("io_id =", io_id, "\nstreamer_id =", streamer_id)
-                            sys.exit()
-                        streamers_to_export.append(streamer.to_exportable_dict())
+                        # get streamers file info together
+                        io_id = batch_index * self.num_streamers_per_file + i + 1
+                        if (io_id in self.io_to_streamer_lookup):
+                            streamer_id = self.io_to_streamer_lookup[io_id]
+                            streamer = self.get(streamer_id)
+                            if (streamer == False):
+                                print("io_id =", io_id, "\nstreamer_id =", streamer_id)
+                                sys.exit()
+                            streamers_to_export.append(streamer.to_exportable_dict())
 
-                # write streamers file to csv in the zip
-                string_buffer = StringIO()
-                filename = 'streamers_' + str(batch_index + 1) + '.csv'
-                writer = csv.DictWriter(string_buffer, fieldnames=fieldnames)
-                writer.writeheader()
-                for streamer in streamers_to_export:
-                    writer.writerow(streamer)
-                zip_file.writestr(filename, string_buffer.getvalue())
+                    # write streamers file to csv in the zip
+                    string_buffer = StringIO()
+                    filename = 'streamers_' + str(batch_index + 1) + '.csv'
+                    writer = csv.DictWriter(string_buffer, fieldnames=fieldnames)
+                    writer.writeheader()
+                    for streamer in streamers_to_export:
+                        writer.writerow(streamer)
+                    zip_file.writestr(filename, string_buffer.getvalue())
 
+            # since writing to the temp .zip worked, delete the old .zip and rename the new one
+            try:
+                os.remove(folderpath + '/streamers.zip')
+            except IOError:
+                pass
+
+            try:
+                os.rename(folderpath + '/streamers[TEMP].zip', folderpath + '/streamers.zip')
+            except IOError:
+                pass
+
+        except (BadZipFile, IOError) as e:
+            print('error while creating ', folderpath + '/streamers[TEMP].zip')
 
 
     # goes to a folder and starts loading all streamers_{n}.csv files at folderpath

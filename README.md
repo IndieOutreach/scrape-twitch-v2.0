@@ -213,15 +213,11 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Streamers now loads from / exports directly to a .zip file that contains all the CSVs.
+- To ensure that partial writes can't mess up the streamers.zip file, Streamers.export_to_csv() now writes to a temp location (streamers[TEMP].zip) and then replaces the old streamers.zip when the write succeeds
 
 
 
 #### What is still in development? Known Issues?
-
-Still in Development:
- - Streamers.export_to_csv() should export to a temp .zip file and then delete the old DB after the export is done
- - This is to mitigate the problems of "what if the main thread crashes during a write and the .zip file becomes incomplete/corrupted"
 
 Problem
  - when first running scraper_controller.py, the 'followers' and 'videos' threads initialize but never start
