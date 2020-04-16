@@ -42,9 +42,9 @@ __streamers_missing_videos_filepath = './data/streamers_missing_videos.csv'
 
 # Time each thread will sleep for after executing
 __sleep_between_livestreams   = 60 * 15 # <- 15 minutes
-__sleep_when_out_of_videos    = 60 * 30 # <- 30 minutes
-__sleep_when_out_of_followers = 60 * 15 # <- 15 minutes
-if (True):
+__sleep_when_out_of_videos    = 60 * 3  # <- 3 minutes
+__sleep_when_out_of_followers = 60 * 3  # <- 3 minutes
+if (False):
     __sleep_between_livestreams   = 10 # <- values used during testing
     __sleep_when_out_of_videos    = 10
     __sleep_when_out_of_followers = 10
@@ -338,6 +338,9 @@ def main_thread():
             if (work[thread_id]['status'] == 'needs_update'):
                 work[thread_id]['streamers'] = streamers.clone()
                 work[thread_id]['status'] = 'waiting'
+                thread_locks[thread_id].acquire() # <- wake up the thread if its sleeping
+                thread_locks[thread_id].notify_all()
+                thread_locks[thread_id].release()
 
         # revive any threads that died -> THREADS NEVER DIE!
         for thread_id in worker_threads:

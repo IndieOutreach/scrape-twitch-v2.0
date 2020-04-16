@@ -213,14 +213,11 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- To ensure that partial writes can't mess up the streamers.zip file, Streamers.export_to_csv() now writes to a temp location (streamers[TEMP].zip) and then replaces the old streamers.zip when the write succeeds
-
+- Fix bug in scraper_controller.py where worker_threads with 'need_update' status could sit in .wait_for_work_from_main() forever because main thread wasn't notifying them of update changes. The main_thread now notifies a worker thread when it updates its job
 
 
 #### What is still in development? Known Issues?
-
-Problem
- - when first running scraper_controller.py, the 'followers' and 'videos' threads initialize but never start
+None
 
 #### What's next?
 
