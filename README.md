@@ -222,9 +222,6 @@ None
 
 #### What's next?
 
-For making scraper_controller.py better
- - Add timeout handling to API requests
-
 
 #### Future Roadmap
 
