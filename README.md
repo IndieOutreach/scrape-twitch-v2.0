@@ -213,7 +213,8 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
- - Add StreamersMissingVideos data to Insights.get_snapshot_of_streamers_db()
+ - Create cron_start_scraper.py, a script that checks the request logs file and runs scraper_controller if it has been long enough to determine that scraper_controller is not currently running properly.
+ - This script should be run on a cron job on server
 
 
 #### What is still in development? Known Issues?
@@ -222,7 +223,6 @@ None
 #### What's next?
 
 For making scraper_controller.py better
- - Write cron job for checking to make sure that the scraper_controller is running - cron_start_scraper.py
  - Add timeout handling to API requests
 
 
