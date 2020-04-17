@@ -44,7 +44,7 @@ class Insights():
     def set_dataset(self, mode, month):
         if (mode == 'cli'):
             self.mode = 'cli'
-            self.streamers = Streamers('./data/streamers')
+            self.streamers = Streamers('./data/streamers', './data/streamers_missing_videos.csv')
             self.games = Games('./data/games.csv')
             self.streamerslogs = GeneralLogs('./logs/streamer_insights[' + month + '].csv')
         elif (mode == 'testing'):
@@ -103,6 +103,7 @@ class Insights():
 
         results = {
             'have_video_data': {'percentage': 0, 'number': 0},
+            'zero_videos': {},
             'followers_past_day': {'percentage': 0, 'number': 0},
             'num_follower_counts': {},
             'num_view_counts': {},
@@ -126,6 +127,7 @@ class Insights():
         num_no_video_ids = len(self.streamers.get_ids_with_no_video_data())
         results['have_video_data']['percentage'] = round(100 - (num_no_video_ids / num_streamers * 100), 2)
         results['have_video_data']['number']     = num_streamers - num_no_video_ids
+        results['zero_videos']                   = self.get_stats_about_streamers_missing_videos()
 
         # Q: How many streamers don't have follower data from last day?
         num_no_followers = len(self.streamers.get_ids_with_missing_follower_data())
@@ -508,6 +510,12 @@ class Insights():
         stats['std_dev'] = round(stats['std_dev'], 2)
         return stats
 
+
+    # Gets data about Streamers.known_missing_videos
+    def get_stats_about_streamers_missing_videos(self):
+        num_streamers = len(self.streamers.known_missing_videos.streamers)
+        stats = {'n': num_streamers}
+        return stats
 
     # Specific Streamer --------------------------------------------------------
 

@@ -213,7 +213,7 @@ Keeps track of actions and requests made by scraper.py
 ## Development Notes
 
 #### What is new in this commit?
-- Fix bug in scraper_controller.py where worker_threads with 'need_update' status could sit in .wait_for_work_from_main() forever because main thread wasn't notifying them of update changes. The main_thread now notifies a worker thread when it updates its job
+ - Add StreamersMissingVideos data to Insights.get_snapshot_of_streamers_db()
 
 
 #### What is still in development? Known Issues?
@@ -224,7 +224,6 @@ None
 For making scraper_controller.py better
  - Write cron job for checking to make sure that the scraper_controller is running - cron_start_scraper.py
  - Add timeout handling to API requests
- - Add StreamersMissingVideos data to Insights.get_snapshot_of_streamers_db()
 
 
 #### Future Roadmap
